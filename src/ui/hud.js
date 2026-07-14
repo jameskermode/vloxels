@@ -38,3 +38,57 @@ export function createFpsCounter() {
     },
   };
 }
+
+// A small on-screen control for the editor's working layer: ▲ / ▼ buttons and
+// a "Layer N" readout. onUp/onDown are called when the buttons are pressed.
+export function createLayerControl({ onUp, onDown }) {
+  const box = document.createElement('div');
+  Object.assign(box.style, {
+    position: 'fixed',
+    top: '8px',
+    right: '8px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '6px',
+    background: 'rgba(0,0,0,0.45)',
+    borderRadius: '10px',
+    color: '#fff',
+    font: '600 13px system-ui, sans-serif',
+    zIndex: '10',
+  });
+
+  const mkBtn = (label, fn) => {
+    const b = document.createElement('button');
+    b.textContent = label;
+    Object.assign(b.style, {
+      minWidth: '48px',
+      minHeight: '48px',
+      border: 'none',
+      borderRadius: '8px',
+      background: '#2a3550',
+      color: '#fff',
+      font: '700 18px system-ui, sans-serif',
+      cursor: 'pointer',
+    });
+    b.addEventListener('pointerdown', (e) => e.stopPropagation());
+    b.addEventListener('click', fn);
+    return b;
+  };
+
+  const readout = document.createElement('span');
+  readout.style.minWidth = '64px';
+  readout.style.textAlign = 'center';
+
+  box.appendChild(mkBtn('▼', onDown));
+  box.appendChild(readout);
+  box.appendChild(mkBtn('▲', onUp));
+  document.body.appendChild(box);
+
+  return {
+    el: box,
+    setValue(y) {
+      readout.textContent = `Layer ${y}`;
+    },
+  };
+}

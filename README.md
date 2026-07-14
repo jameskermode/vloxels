@@ -29,9 +29,17 @@ To run standalone on the Pi you can `npm run build` there too, then serve
 
 ## Controls (grows each milestone)
 
+Editor:
+- **Tap / left-click** — place the selected block (on a voxel face it snaps to
+  the next cell; on empty space it lands on the working layer).
+- **Right-click / long-press** — remove the block under the pointer.
+- **Drag** — orbit the camera.
+- **`[` / `]`** or the on-screen **▲ / ▼** — move the working layer up/down
+  (build in mid-air).
 - **F** — toggle the fps / physics-step-time counter.
 
-More controls (build, play, jump, mode toggle) arrive in later milestones.
+Your level autosaves to the browser and reloads next time. More controls
+(play, jump, mode toggle) arrive in later milestones.
 
 ## Milestones
 

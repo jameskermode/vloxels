@@ -1,11 +1,13 @@
 // main.js — bootstrap for Vloxels.
 //
 // Milestone 1: prove the toolchain (Rapier wasm + Three.js) end-to-end.
-// Milestone 2: level data model + block registry, a hardcoded test level
-//              rendered with one InstancedMesh per block type.
+// Milestone 2: level data model + block registry + instanced voxel rendering.
+// Milestone 3: the editor — raycast place/remove, palette, working-layer
+//              control, OrbitControls, and localStorage autosave.
 //
-// Later milestones grow this into a full editor + physics platformer.
+// Later milestones add physics + play mode.
 
+import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { CONFIG } from './config.js';
@@ -13,53 +15,28 @@ import { BLOCKS } from './blocks.js';
 import { Level } from './level.js';
 import { createRenderer, createScene, createCamera, handleResize } from './render/scene.js';
 import { createVoxelRenderer } from './render/voxels.js';
-import { createFpsCounter } from './ui/hud.js';
+import { createPalette } from './edit/palette.js';
+import { createEditor } from './edit/editor.js';
+import { createFpsCounter, createLayerControl } from './ui/hud.js';
+import { load, createAutosaver } from './storage.js';
 
-// Build a small hardcoded level that shows off every block type. This is
-// throwaway scaffolding — the editor (Milestone 3) replaces it.
-function buildTestLevel() {
-  const level = new Level(CONFIG.grid.x, CONFIG.grid.y, CONFIG.grid.z, 'Test Level');
+// A small starter level so a fresh page isn't an empty void. Replaced the
+// moment you start editing (and thereafter loaded from localStorage).
+function buildStarterLevel() {
+  const level = new Level(CONFIG.grid.x, CONFIG.grid.y, CONFIG.grid.z, 'My Level');
   const S = BLOCKS;
-
-  // A raised floor platform in the middle of the grid (11..21 in x and z).
-  for (let x = 10; x <= 22; x++) {
-    for (let z = 10; z <= 22; z++) {
+  for (let x = 12; x <= 20; x++) {
+    for (let z = 12; z <= 20; z++) {
       level.set(x, 0, z, S.solid.id);
     }
   }
-
-  // A staircase of bricks climbing in +x.
-  for (let i = 0; i < 4; i++) {
-    for (let z = 12; z <= 14; z++) {
-      level.set(23 + i, i, z, S.brick.id);
-    }
-  }
-
-  // A hazard (lava) strip along one edge of the floor.
-  for (let x = 11; x <= 21; x++) {
-    level.set(x, 1, 10, S.hazard.id);
-  }
-
-  // A little row of floating coins to collect.
-  for (let x = 12; x <= 20; x += 2) {
-    level.set(x, 2, 16, S.coin.id);
-  }
-
-  // A spinning-blades hazard and a spinning carry-platform.
-  level.set(16, 1, 20, S.spinner.id);
-  level.set(19, 1, 13, S.platformSpin.id);
-
-  // Start on one corner of the floor, goal on the far corner.
-  level.set(11, 1, 21, S.start.id);
-  level.set(21, 1, 12, S.goal.id);
-
+  level.set(13, 1, 13, S.start.id);
+  level.set(19, 1, 19, S.goal.id);
   return level;
 }
 
 async function main() {
-  // Rapier still initialised at boot (proves wasm every run); the real physics
-  // world arrives in Milestone 4.
-  await RAPIER.init();
+  await RAPIER.init(); // proves the wasm every boot; real world arrives in M4
   console.log(`[vloxels] Rapier ${RAPIER.version()} ready.`);
 
   const container = document.getElementById('app');
@@ -68,29 +45,37 @@ async function main() {
   const camera = createCamera();
   handleResize(renderer, camera);
 
-  // Orbit the level to inspect it (this becomes EDIT-mode camera in M3).
+  // EDIT-mode camera: orbit to look around. Right mouse is freed up for
+  // block removal (we handle it ourselves), so it doesn't pan the camera.
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.target.set(CONFIG.grid.x / 2, 2, CONFIG.grid.z / 2);
   controls.enableDamping = true;
+  controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: null };
   controls.update();
 
-  // Build and render the test level.
-  const level = buildTestLevel();
+  // Level: prefer the autosaved one, else a starter.
+  const level = load() || buildStarterLevel();
   const voxels = createVoxelRenderer(scene);
   voxels.rebuild(level);
 
-  // Quick sanity log of the data model + serialisation round-trip.
-  let filled = 0;
-  level.forEachBlock(() => filled++);
-  const roundTrip = Level.fromJSON(level.toJSON());
-  let rtOk = roundTrip.blocks.length === level.blocks.length;
-  for (let i = 0; rtOk && i < level.blocks.length; i++) {
-    if (roundTrip.blocks[i] !== level.blocks[i]) rtOk = false;
-  }
-  console.log(
-    `[vloxels] Test level: ${filled} blocks, start at ${level.find(BLOCKS.start.id)}, ` +
-      `goal at ${level.find(BLOCKS.goal.id)}. JSON round-trip ${rtOk ? 'OK' : 'FAILED'}.`,
-  );
+  // Editor UI + logic.
+  const palette = createPalette();
+  const autosave = createAutosaver(1000);
+  const editor = createEditor({
+    renderer,
+    camera,
+    level,
+    voxels,
+    getSelectedId: palette.getSelectedId,
+    onChange: autosave, // debounced localStorage save on every edit
+  });
+
+  const layerControl = createLayerControl({
+    onUp: () => editor.setLayer(editor.getLayer() + 1),
+    onDown: () => editor.setLayer(editor.getLayer() - 1),
+  });
+  editor.onLayerChange = (y) => layerControl.setValue(y);
+  layerControl.setValue(editor.getLayer());
 
   const fpsCounter = createFpsCounter();
   let last = performance.now();
@@ -107,7 +92,10 @@ async function main() {
   }
   requestAnimationFrame(frame);
 
-  console.log('[vloxels] Milestone 2 running — drag to orbit, press F for fps.');
+  console.log(
+    '[vloxels] Milestone 3 (editor) running — tap to place, right-click/long-press to remove, ' +
+      '[ / ] or ▲/▼ to change layer, drag to orbit, F for fps.',
+  );
 }
 
 main().catch((err) => {
