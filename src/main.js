@@ -2,10 +2,11 @@
 //
 // Milestone 1: prove the toolchain (Rapier wasm + Three.js) end-to-end.
 // Milestone 2: level data model + block registry + instanced voxel rendering.
-// Milestone 3: the editor — raycast place/remove, palette, working-layer
-//              control, OrbitControls, and localStorage autosave.
+// Milestone 3: the editor — place/remove, palette, layers, autosave.
+// Milestone 4: physics sandbox — greedy-merged static colliders from the level
+//              + droppable debug balls (press B to drop, C to reset).
 //
-// Later milestones add physics + play mode.
+// Later milestones add the player + play mode + spinners.
 
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
@@ -19,9 +20,10 @@ import { createPalette } from './edit/palette.js';
 import { createEditor } from './edit/editor.js';
 import { createFpsCounter, createLayerControl } from './ui/hud.js';
 import { load, createAutosaver } from './storage.js';
+import { createPhysicsWorld } from './physics/world.js';
+import { createVoxelBody } from './physics/voxelBody.js';
+import { createDebugBalls } from './debugBalls.js';
 
-// A small starter level so a fresh page isn't an empty void. Replaced the
-// moment you start editing (and thereafter loaded from localStorage).
 function buildStarterLevel() {
   const level = new Level(CONFIG.grid.x, CONFIG.grid.y, CONFIG.grid.z, 'My Level');
   const S = BLOCKS;
@@ -36,7 +38,7 @@ function buildStarterLevel() {
 }
 
 async function main() {
-  await RAPIER.init(); // proves the wasm every boot; real world arrives in M4
+  await RAPIER.init();
   console.log(`[vloxels] Rapier ${RAPIER.version()} ready.`);
 
   const container = document.getElementById('app');
@@ -45,20 +47,50 @@ async function main() {
   const camera = createCamera();
   handleResize(renderer, camera);
 
-  // EDIT-mode camera: orbit to look around. Right mouse is freed up for
-  // block removal (we handle it ourselves), so it doesn't pan the camera.
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.target.set(CONFIG.grid.x / 2, 2, CONFIG.grid.z / 2);
   controls.enableDamping = true;
   controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: null };
   controls.update();
 
-  // Level: prefer the autosaved one, else a starter.
   const level = load() || buildStarterLevel();
   const voxels = createVoxelRenderer(scene);
   voxels.rebuild(level);
 
-  // Editor UI + logic.
+  // --- Physics sandbox (Milestone 4) ----------------------------------------
+  // The world is created once; the terrain body is (re)built from the level on
+  // demand. Physics only steps while `physicsOn`.
+  const physics = createPhysicsWorld();
+  const terrain = createVoxelBody(physics.world);
+  const balls = createDebugBalls(physics.world, scene);
+  let physicsOn = false;
+
+  function startPhysics() {
+    if (!physicsOn) {
+      terrain.rebuild(level);
+      physicsOn = true;
+      console.log('[vloxels] physics ON — dropping balls. Press C to reset.');
+    }
+  }
+  function resetPhysics() {
+    balls.clear();
+    terrain.remove();
+    physicsOn = false;
+    console.log('[vloxels] physics OFF — sandbox reset.');
+  }
+  function dropBall() {
+    startPhysics();
+    // Drop above the middle of the grid with a small random scatter.
+    const jitter = () => (Math.random() - 0.5) * 3;
+    balls.drop(CONFIG.grid.x / 2 + jitter(), CONFIG.grid.y + 3, CONFIG.grid.z / 2 + jitter());
+  }
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'b' || e.key === 'B') dropBall();
+    else if (e.key === 'c' || e.key === 'C') resetPhysics();
+  });
+
+  // --- Editor ---------------------------------------------------------------
   const palette = createPalette();
   const autosave = createAutosaver(1000);
   const editor = createEditor({
@@ -67,7 +99,10 @@ async function main() {
     level,
     voxels,
     getSelectedId: palette.getSelectedId,
-    onChange: autosave, // debounced localStorage save on every edit
+    onChange: (lvl) => {
+      autosave(lvl);
+      if (physicsOn) terrain.rebuild(lvl); // keep colliders in sync with edits
+    },
   });
 
   const layerControl = createLayerControl({
@@ -77,6 +112,7 @@ async function main() {
   editor.onLayerChange = (y) => layerControl.setValue(y);
   layerControl.setValue(editor.getLayer());
 
+  // --- Loop -----------------------------------------------------------------
   const fpsCounter = createFpsCounter();
   let last = performance.now();
 
@@ -85,7 +121,15 @@ async function main() {
     last = now;
 
     controls.update();
-    fpsCounter.setStepMs(0); // no physics stepping yet
+
+    if (physicsOn) {
+      const stepMs = physics.step(dt);
+      balls.sync();
+      fpsCounter.setStepMs(stepMs);
+    } else {
+      fpsCounter.setStepMs(0);
+    }
+
     fpsCounter.tick(dt);
     renderer.render(scene, camera);
     requestAnimationFrame(frame);
@@ -93,8 +137,8 @@ async function main() {
   requestAnimationFrame(frame);
 
   console.log(
-    '[vloxels] Milestone 3 (editor) running — tap to place, right-click/long-press to remove, ' +
-      '[ / ] or ▲/▼ to change layer, drag to orbit, F for fps.',
+    '[vloxels] Milestone 4 running — build with the editor, then press B to drop ' +
+      'physics balls onto your terrain, C to reset. F for fps/step-time.',
   );
 }
 

@@ -38,6 +38,11 @@ Editor:
   (build in mid-air).
 - **F** — toggle the fps / physics-step-time counter.
 
+Physics sandbox (Milestone 4):
+- **B** — drop a physics debug ball onto your terrain (builds the colliders
+  the first time).
+- **C** — clear the balls and reset the sandbox.
+
 Your level autosaves to the browser and reloads next time. More controls
 (play, jump, mode toggle) arrive in later milestones.
 
