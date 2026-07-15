@@ -68,7 +68,7 @@ playable from the Pages URL on any tablet, no install.
 | **Coin** | spins & bobs; touch to collect (🪙 tally up top) |
 | **Blades** | crossed bars spinning fast — physically knock you flying |
 | **Platform** | slow spinning platform that carries you as you stand on it |
-| **Water** | fall in and you respawn |
+| **Water** | a flowing source — spreads down & sideways across the level (stops at walls); fall in and you respawn |
 | **Start** | where the player spawns (only one) |
 | **Goal** | reach it to win, with your coin tally + Replay (only one) |
 

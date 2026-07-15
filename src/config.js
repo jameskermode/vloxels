@@ -22,6 +22,12 @@ export const CONFIG = {
   dirIntensity: 0.9,
   dirPosition: [12, 20, 8], // direction the sun comes from
 
+  // --- Water flow -----------------------------------------------------------
+  // How far water spreads sideways from where it starts (like Minecraft's 7).
+  // Bigger = water travels further before petering out. Falling water resets
+  // this, so waterfalls create fresh spread where they land.
+  water: { reach: 6 },
+
   // --- Physics --------------------------------------------------------------
   gravity: -20, // snappier than -9.81 for a platformer. Try -3 for the moon!
   fixedStep: 1 / 60, // physics ticks at a rock-steady 60 Hz

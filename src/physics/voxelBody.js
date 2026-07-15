@@ -31,8 +31,10 @@ export function createVoxelBody(world) {
     }
   }
 
-  // (Re)build the terrain body from the current level. Returns collider count.
-  function rebuild(level) {
+  // (Re)build the terrain body from the current level. `waterCells` is the list
+  // of wet cells from computeWater() — each becomes a kill sensor, so flowed
+  // water is just as deadly as a placed source. Returns collider count.
+  function rebuild(level, waterCells = []) {
     remove();
     body = world.createRigidBody(RAPIER.RigidBodyDesc.fixed());
     colliderCount = 0;
@@ -62,13 +64,9 @@ export function createVoxelBody(world) {
       }
     }
 
-    // Sensor colliders for the non-solid special blocks. One shrunk cuboid each,
-    // attached to the same static body. They fire intersection events that
-    // rules.js turns into respawns / coin pickups / winning.
-    level.forEachBlock((x, y, z, id) => {
-      const def = blockById(id);
-      if (!def) return;
-      if (!(def.kills || def.collect || def.wins)) return;
+    // Sensor colliders fire intersection events that rules.js turns into coin
+    // pickups / winning. One shrunk cuboid each, attached to the static body.
+    const addSensor = (blockKey, x, y, z) => {
       const collider = world.createCollider(
         RAPIER.ColliderDesc.cuboid(SENSOR_HALF, SENSOR_HALF, SENSOR_HALF)
           .setTranslation(x + 0.5, y + 0.5, z + 0.5)
@@ -76,8 +74,16 @@ export function createVoxelBody(world) {
           .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS),
         body,
       );
-      sensors.set(collider.handle, { blockKey: def.key, cell: [x, y, z], collider });
+      sensors.set(collider.handle, { blockKey, cell: [x, y, z], collider });
+    };
+
+    // Coins and the goal come from placed blocks.
+    level.forEachBlock((x, y, z, id) => {
+      const def = blockById(id);
+      if (def && (def.collect || def.wins)) addSensor(def.key, x, y, z);
     });
+    // Water kill-sensors come from the flowed water field (sources + spread).
+    for (const [x, y, z] of waterCells) addSensor('hazard', x, y, z);
 
     console.log(
       `[vloxels] terrain colliders: ${colliderCount}, sensors: ${sensors.size}` +

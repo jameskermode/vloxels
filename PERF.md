@@ -24,3 +24,9 @@ Toggle the on-screen counter with **F** (shows fps + ms/physics-step).
   (blades/platform) roughly 4×'d the step time vs M5, but it's still half the
   4 ms red line and fps held at 35. Watch it if a level piles on many
   blades/platforms; first levers are spinner count and CCD scope.
+- **Flowing water (2026-07-15):** each wet cell currently gets its own kill
+  sensor, so a big open lake from one source can be ~60 sensors (reach 6). Fine
+  for normal levels, but if a Pi playtest with lots of water dips below budget,
+  the easy win is greedy-merging the water kill-sensors into runs (same trick
+  as the solid colliders) — they don't need to be per-cell. Also tune
+  `CONFIG.water.reach` down.

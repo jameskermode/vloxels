@@ -14,6 +14,8 @@ import { Level } from './level.js';
 import { createRenderer, createScene, createCamera, handleResize } from './render/scene.js';
 import { createVoxelRenderer } from './render/voxels.js';
 import { createSpinners } from './render/spinners.js';
+import { createWater } from './render/water.js';
+import { computeWater } from './water.js';
 import { createPalette } from './edit/palette.js';
 import { createEditor } from './edit/editor.js';
 import {
@@ -84,8 +86,11 @@ async function main() {
   const level = load() || buildStarterLevel();
   const voxels = createVoxelRenderer(scene);
   const spinners = createSpinners(scene);
+  const water = createWater(scene);
+  const refreshWater = () => water.rebuild(computeWater(level));
   voxels.rebuild(level);
   spinners.rebuild(level);
+  refreshWater();
 
   // Editor + UI.
   const palette = createPalette();
@@ -99,6 +104,7 @@ async function main() {
     onChange: (lvl) => {
       autosave(lvl);
       spinners.rebuild(lvl); // keep coin/blade/platform meshes in sync with edits
+      refreshWater(); // re-flow water as terrain/sources change
     },
   });
   const layerControl = createLayerControl({
@@ -130,6 +136,7 @@ async function main() {
     level.name = incoming.name;
     voxels.rebuild(level);
     spinners.rebuild(level);
+    refreshWater();
     save(level);
   }
 
@@ -148,6 +155,7 @@ async function main() {
       level.name = 'My Level';
       voxels.rebuild(level);
       spinners.rebuild(level);
+      refreshWater();
       save(level);
     },
     onExport: () => exportLevel(level),
@@ -166,9 +174,11 @@ async function main() {
 
   function enterPlay() {
     const snapshot = level.blocks.slice();
+    const waterCells = computeWater(level);
     const physics = createPhysicsWorld();
     const terrain = createVoxelBody(physics.world);
-    terrain.rebuild(level); // solid colliders + water/coin/goal sensors
+    terrain.rebuild(level, waterCells); // solid colliders + coin/goal + water sensors
+    water.rebuild(waterCells);
     const spinBodies = createSpinnerBodies(physics.world);
     spinBodies.build(level);
     spinners.rebuild(level);
@@ -228,6 +238,7 @@ async function main() {
 
     voxels.rebuild(level);
     spinners.rebuild(level);
+    refreshWater();
     coinCounter.hide();
     winOverlay.hide();
     controls.enabled = true;
@@ -312,7 +323,7 @@ async function main() {
     const dt = Math.min((now - last) / 1000, CONFIG.maxFrameDt);
     last = now;
     elapsed += dt;
-    voxels.updateWater(elapsed); // flowing-water ripple, alive in both modes
+    water.update(elapsed); // flowing-water ripple, alive in both modes
 
     if (mode === 'play') {
       const intent = readMoveIntent();
