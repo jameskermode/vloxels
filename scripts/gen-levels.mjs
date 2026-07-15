@@ -57,25 +57,24 @@ const save = (L, file) => {
 }
 
 // 4) Waterfall — a spout on a tower pours a cascade down into a walled pool.
-//    The pool is a sunken basin (its walls are the surrounding slab) pre-filled
-//    with water so it reads as a full pool; the cascade splashes in on top.
-//    Showcases falling water flowing into a contained pool.
+//    The pool is FLUSH with the ground so you can just wade in and out (water
+//    no longer hurts you); the spout cascades in and splashes across. Hop the
+//    spinning stone to cross without getting wet.
 {
   const L = new Level(32, 8, 32, 'Waterfall');
-  box(L, 6, 26, 0, 1, 6, 26, B.solid.id); // thick walkway slab (top y2)
-  box(L, 12, 20, 0, 0, 12, 18, B.hazard.id); // pool floor: full sheet of water at y0
-  box(L, 12, 20, 1, 1, 12, 18, 0); // open air above the pool (y1) so it's a visible basin
+  box(L, 6, 26, 0, 0, 6, 26, B.solid.id); // ground, top y1
+  box(L, 12, 20, 0, 0, 12, 18, B.hazard.id); // flush pool of water (surface at y1)
   // West tower with a spout on top that pours EAST only, into the pool.
-  box(L, 10, 11, 2, 5, 14, 16, B.solid.id); // tower, top y6
+  box(L, 10, 11, 1, 5, 14, 16, B.solid.id); // tower, top y6
   L.set(11, 6, 15, B.hazard.id); // the source
   L.set(10, 6, 15, B.solid.id); // lip: west
   L.set(11, 6, 14, B.solid.id); // lip: north
   L.set(11, 6, 16, B.solid.id); // lip: south  (only east, over the pool, is open)
-  L.set(15, 2, 15, B.platformSpin.id); // a spinning stepping stone across the pool
-  L.set(14, 3, 15, B.coin.id);
-  L.set(17, 3, 15, B.coin.id);
-  L.set(8, 2, 16, B.start.id); // on the walkway, west of the pool
-  L.set(24, 2, 16, B.goal.id); // on the walkway, east of the pool
+  L.set(15, 1, 15, B.platformSpin.id); // a spinning stepping stone across the pool
+  L.set(14, 2, 15, B.coin.id);
+  L.set(17, 2, 15, B.coin.id);
+  L.set(8, 1, 16, B.start.id); // on the ground, west of the pool
+  L.set(24, 1, 16, B.goal.id); // on the ground, east of the pool
   save(L, 'waterfall.json');
 }
 

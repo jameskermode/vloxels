@@ -64,6 +64,7 @@ export const CONFIG = {
     waterSpeedMult: 0.5, // horizontal speed while in water
     waterControl: 0.6, // steering responsiveness while in water
     waterSink: -1.5, // gentle sink speed (units/sec) in deep water
-    swimSpeed: 6.5, // upward speed while holding jump underwater (climb out)
+    swimSpeed: 6.5, // max upward swim speed when deep underwater
+    swimApproach: 5, // how hard to ease toward the surface (higher = firmer float)
   },
 };

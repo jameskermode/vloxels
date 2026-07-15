@@ -99,6 +99,20 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false) {
     return isWaterCell(Math.floor(x), Math.floor(y), Math.floor(z));
   }
 
+  // The contiguous water column the player is standing in at (cx,cz), or null.
+  // Returns the world y of its surface (top face) and its bottom (lower face),
+  // seeded from whichever of the player's centre/feet is actually in water.
+  function waterColumn(cx, cz, centerY, feetY) {
+    let seed = Math.floor(centerY);
+    if (!isWaterCell(cx, seed, cz)) seed = Math.floor(feetY + 0.05);
+    if (!isWaterCell(cx, seed, cz)) return null;
+    let top = seed;
+    let bot = seed;
+    while (isWaterCell(cx, top + 1, cz)) top++;
+    while (isWaterCell(cx, bot - 1, cz)) bot--;
+    return { surfaceY: top + 1, bottomY: bot };
+  }
+
   // Called once per FIXED physics step (before world.step).
   function fixedUpdate(dt) {
     const ground = groundBody();
@@ -107,11 +121,14 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false) {
     if (jumpBuffer > 0) jumpBuffer = Math.max(0, jumpBuffer - dt);
 
     const t = body.translation();
+    const cx = Math.floor(t.x);
+    const cz = Math.floor(t.z);
     const feetY = t.y - REACH;
     // In water if our feet or our middle are inside a water cell.
     const inWater = wetAt(t.x, feetY + 0.1, t.z) || wetAt(t.x, t.y, t.z);
     // "Deep": water covers us and we're not standing on solid ground.
     const deep = inWater && !grounded;
+    const col = inWater ? waterColumn(cx, cz, t.y, feetY) : null;
 
     const v = body.linvel();
     // Target = the moving surface's velocity + our own input. On a spinning
@@ -132,10 +149,12 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false) {
 
     let ny = v.y;
     if (inWater) {
-      // Swim UP continuously while the jump button is held (or freshly tapped),
-      // so you can rise and climb out onto a ledge; otherwise sink gently.
+      // Swim UP while the jump button is held (or freshly tapped). Rise fast
+      // when deep, but EASE toward the surface so you float at the waterline
+      // instead of launching clear of the water in open water.
       if (swimHeld || jumpBuffer > 0) {
-        ny = P.swimSpeed;
+        const toSurface = col ? col.surfaceY - feetY : 0; // >0 = below surface
+        ny = Math.max(0, Math.min(P.swimSpeed, toSurface * P.swimApproach));
         jumpBuffer = 0;
       } else if (deep) {
         ny = lerp(v.y, P.waterSink, 0.15); // water drag: gentle sink, not a plummet
@@ -149,19 +168,11 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false) {
     body.setLinvel({ x: lerp(v.x, targetX, control), y: ny, z: lerp(v.z, targetZ, control) }, true);
 
     // Soft bottom: don't sink out through the void below a pool — rest on the
-    // lowest water cell. This is also why water never forces a respawn.
-    if (deep) {
-      const cx = Math.floor(t.x);
-      const cz = Math.floor(t.z);
-      let yMin = Math.floor(feetY + 0.05);
-      if (isWaterCell(cx, yMin, cz)) {
-        while (isWaterCell(cx, yMin - 1, cz)) yMin--;
-        if (feetY < yMin) {
-          body.setTranslation({ x: t.x, y: yMin + REACH, z: t.z }, true);
-          const vv = body.linvel();
-          if (vv.y < 0) body.setLinvel({ x: vv.x, y: 0, z: vv.z }, true);
-        }
-      }
+    // bottom of the water column. This is also why water never forces a respawn.
+    if (deep && col && feetY < col.bottomY) {
+      body.setTranslation({ x: t.x, y: col.bottomY + REACH, z: t.z }, true);
+      const vv = body.linvel();
+      if (vv.y < 0) body.setLinvel({ x: vv.x, y: 0, z: vv.z }, true);
     }
 
     // Fell off the world (not via water) → respawn.
