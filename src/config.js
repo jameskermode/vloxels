@@ -59,5 +59,11 @@ export const CONFIG = {
     coyoteTime: 0.1, // seconds after leaving a ledge you can still jump
     jumpBuffer: 0.1, // seconds a too-early jump press is remembered
     fallKillY: -5, // fall below this world-y and you respawn
+    // Water: wade at half speed, sink gently in deep water, Space swims up.
+    // Water never kills — you rest on the bottom of the pool.
+    waterSpeedMult: 0.5, // horizontal speed while in water
+    waterControl: 0.6, // steering responsiveness while in water
+    waterSink: -1.5, // gentle sink speed (units/sec) in deep water
+    swimSpeed: 5.0, // upward speed when you press jump underwater
   },
 };

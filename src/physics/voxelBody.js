@@ -31,10 +31,8 @@ export function createVoxelBody(world) {
     }
   }
 
-  // (Re)build the terrain body from the current level. `waterCells` is the list
-  // of wet cells from computeWater() — each becomes a kill sensor, so flowed
-  // water is just as deadly as a placed source. Returns collider count.
-  function rebuild(level, waterCells = []) {
+  // (Re)build the terrain body from the current level. Returns collider count.
+  function rebuild(level) {
     remove();
     body = world.createRigidBody(RAPIER.RigidBodyDesc.fixed());
     colliderCount = 0;
@@ -77,33 +75,18 @@ export function createVoxelBody(world) {
       sensors.set(collider.handle, { blockKey, cell: [x, y, z], collider });
     };
 
-    // Coins and the goal come from placed blocks.
+    // Coins and the goal come from placed blocks. (Water is not a sensor — the
+    // player samples the water field directly for wade/sink physics.)
     level.forEachBlock((x, y, z, id) => {
       const def = blockById(id);
       if (def && (def.collect || def.wins)) addSensor(def.key, x, y, z);
     });
-    // Water kill-sensors come from the flowed water field (sources + spread).
-    for (const [x, y, z] of waterCells) addSensor('hazard', x, y, z);
 
     console.log(
       `[vloxels] terrain colliders: ${colliderCount}, sensors: ${sensors.size}` +
         (colliderCount > 500 ? '  ⚠️ over the ~500 budget — optimise!' : ''),
     );
     return colliderCount;
-  }
-
-  // Add one water kill-sensor at a cell (used by the ticked PLAY-mode water sim
-  // as the flood advances, so you're only in danger where water has reached).
-  function addWaterSensor(x, y, z) {
-    if (!body) return;
-    const collider = world.createCollider(
-      RAPIER.ColliderDesc.cuboid(SENSOR_HALF, SENSOR_HALF, SENSOR_HALF)
-        .setTranslation(x + 0.5, y + 0.5, z + 0.5)
-        .setSensor(true)
-        .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS),
-      body,
-    );
-    sensors.set(collider.handle, { blockKey: 'hazard', cell: [x, y, z], collider });
   }
 
   // Remove a single sensor (used when a coin is collected).
@@ -117,7 +100,6 @@ export function createVoxelBody(world) {
   return {
     rebuild,
     remove,
-    addWaterSensor,
     removeSensor,
     get sensors() {
       return sensors;

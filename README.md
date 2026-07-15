@@ -57,7 +57,7 @@ playable from the Pages URL on any tablet, no install.
 - **WASD / arrow keys**, or the **touch joystick** (left half) — move
   (camera-relative).
 - **Space**, or the **⤒ Jump** button (right half) — jump (with coyote-time +
-  jump-buffer, so it's forgiving).
+  jump-buffer, so it's forgiving); underwater it swims you up.
 
 ## Blocks
 
@@ -67,7 +67,7 @@ playable from the Pages URL on any tablet, no install.
 | **Coin** | spins & bobs; touch to collect (🪙 tally up top) |
 | **Blades** | crossed bars spinning fast — physically knock you flying |
 | **Platform** | slow spinning platform that carries you as you stand on it |
-| **Water** | a flowing source — spreads down & sideways across the level (stops at walls); fall in and you respawn |
+| **Water** | a flowing source — spreads down & sideways (stops at walls); wade through it at half speed and sink into deep water (Space swims up). Doesn't kill you |
 | **Start** | where the player spawns (only one) |
 | **Goal** | reach it to win, with your coin tally + Replay (only one) |
 
