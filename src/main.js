@@ -15,7 +15,7 @@ import { createRenderer, createScene, createCamera, handleResize } from './rende
 import { createVoxelRenderer } from './render/voxels.js';
 import { createSpinners } from './render/spinners.js';
 import { createWater } from './render/water.js';
-import { computeWater } from './water.js';
+import { computeWater, createWaterSim } from './water.js';
 import { createPalette } from './edit/palette.js';
 import { createEditor } from './edit/editor.js';
 import {
@@ -174,11 +174,16 @@ async function main() {
 
   function enterPlay() {
     const snapshot = level.blocks.slice();
-    const waterCells = computeWater(level);
     const physics = createPhysicsWorld();
     const terrain = createVoxelBody(physics.world);
-    terrain.rebuild(level, waterCells); // solid colliders + coin/goal + water sensors
-    water.rebuild(waterCells);
+    terrain.rebuild(level, []); // solid + coin/goal sensors; water flows in over time
+    // Ticked water: starts at the sources and spreads/pours ring by ring, adding
+    // its kill-sensors as it goes, so you WATCH it flow.
+    const waterSim = createWaterSim();
+    const wet = waterSim.reset(level);
+    for (const [x, y, z] of wet) terrain.addWaterSensor(x, y, z);
+    water.rebuild(wet);
+    let waterAcc = 0;
     const spinBodies = createSpinnerBodies(physics.world);
     spinBodies.build(level);
     spinners.rebuild(level);
@@ -218,7 +223,7 @@ async function main() {
     followCam.reset();
     followCam.snapTo(player.position());
 
-    play = { physics, terrain, spinBodies, balls, player, rules, snapshot };
+    play = { physics, terrain, spinBodies, balls, player, rules, snapshot, waterSim, wet, waterAcc };
     mode = 'play';
     modeButton.setMode('play');
     console.log('[vloxels] PLAY — WASD/arrows move, Space jumps, B drops a ball.');
@@ -335,6 +340,24 @@ async function main() {
       play.player.syncMesh();
       play.balls.sync();
       spinners.update(dt);
+
+      // Advance the ticked water flood: spread a ring every tickSeconds, adding
+      // kill-sensors and growing the rendered water as it goes.
+      play.waterAcc += dt;
+      let flooded = false;
+      let iters = 0;
+      while (!play.waterSim.done && play.waterAcc >= CONFIG.water.tickSeconds && iters < 4) {
+        play.waterAcc -= CONFIG.water.tickSeconds;
+        iters++;
+        const nw = play.waterSim.tick();
+        for (const [x, y, z] of nw) {
+          play.terrain.addWaterSensor(x, y, z);
+          play.wet.push([x, y, z]);
+        }
+        if (nw.length) flooded = true;
+      }
+      if (flooded) water.rebuild(play.wet);
+
       play.rules.drain();
       followCam.update(dt, play.player.position());
       fpsCounter.setStepMs(stepMs);

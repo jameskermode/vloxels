@@ -4,13 +4,101 @@
 // the grid edges) are walls, so water walled-in on all sides just sits there;
 // water with an opening flows out and off ledges (making little waterfalls).
 //
-// This is a plain flood-fill (breadth-first), recomputed whenever the level
-// changes — no per-frame simulation, so it's cheap. It returns the list of wet
-// cells (sources + everywhere the water flowed) for the renderer and the
-// physics sensors to use.
+// Two flavours share the same rules:
+//   - computeWater(level): the whole flood computed at once. EDIT mode uses this
+//     so the finished flow shows instantly as you build.
+//   - createWaterSim(): a ticked stepper. PLAY mode uses this so the water
+//     visibly pours and spreads ring by ring. Its final state is identical to
+//     computeWater(), so physics sensors and visuals stay in sync.
 
 import { CONFIG } from './config.js';
 import { BLOCKS } from './blocks.js';
+
+const SIDES = [
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+];
+
+// A TICKED version of the flow used in PLAY mode: water spreads one "ring" per
+// tick so you watch it pour and fill, instead of appearing all at once. Its
+// final state matches computeWater() exactly, so physics/visuals stay in sync.
+//
+//   reset(level) -> initial wet cells (the sources), seeded at full strength
+//   tick()       -> the cells that became wet THIS tick (empty array when done)
+//   done         -> true once nothing new can spread
+export function createWaterSim() {
+  const MAX = CONFIG.water.reach;
+  const HAZ = BLOCKS.hazard.id;
+  let level;
+  let levels; // Int16Array of current water level per cell (0 = dry)
+  let frontier; // cells to propagate from next tick
+  let done = false;
+
+  const idx = (x, y, z) => level.index(x, y, z);
+  const empty = (x, y, z) => level.inBounds(x, y, z) && level.get(x, y, z) === 0;
+
+  function reset(lvl) {
+    level = lvl;
+    levels = new Int16Array(lvl.sizeX * lvl.sizeY * lvl.sizeZ);
+    frontier = [];
+    done = false;
+    const sources = [];
+    lvl.forEachBlock((x, y, z, id) => {
+      if (id === HAZ) {
+        levels[idx(x, y, z)] = MAX;
+        frontier.push([x, y, z]);
+        sources.push([x, y, z]);
+      }
+    });
+    if (frontier.length === 0) done = true;
+    return sources; // sources are wet from the start
+  }
+
+  function tick() {
+    if (done) return [];
+    const next = [];
+    const newWet = [];
+    // raise(cell,newLevel): update a cell; report it as newly wet only the first
+    // time it goes from dry to wet (so sensors/render aren't added twice).
+    const raise = (x, y, z, nl) => {
+      const i = idx(x, y, z);
+      if (levels[i] >= nl) return;
+      const wasDry = levels[i] === 0;
+      levels[i] = nl;
+      next.push([x, y, z]);
+      if (wasDry) newWet.push([x, y, z]);
+    };
+
+    for (const [x, y, z] of frontier) {
+      const L = levels[idx(x, y, z)];
+      if (L <= 0) continue;
+      if (empty(x, y - 1, z)) {
+        raise(x, y - 1, z, MAX); // fall (resets to full strength)
+        continue;
+      }
+      const nl = L - 1;
+      if (nl > 0) {
+        for (const [dx, dz] of SIDES) {
+          if (empty(x + dx, y, z + dz)) raise(x + dx, y, z + dz, nl);
+        }
+      }
+    }
+
+    frontier = next;
+    if (next.length === 0) done = true;
+    return newWet;
+  }
+
+  return {
+    reset,
+    tick,
+    get done() {
+      return done;
+    },
+  };
+}
 
 export function computeWater(level) {
   const { sizeX, sizeY, sizeZ } = level;
@@ -28,13 +116,6 @@ export function computeWater(level) {
       queue.push([x, y, z]);
     }
   });
-
-  const SIDES = [
-    [1, 0],
-    [-1, 0],
-    [0, 1],
-    [0, -1],
-  ];
 
   let head = 0;
   while (head < queue.length) {

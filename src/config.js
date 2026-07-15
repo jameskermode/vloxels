@@ -26,7 +26,10 @@ export const CONFIG = {
   // How far water spreads sideways from where it starts (like Minecraft's 7).
   // Bigger = water travels further before petering out. Falling water resets
   // this, so waterfalls create fresh spread where they land.
-  water: { reach: 6 },
+  // reach: how far water spreads sideways. tickSeconds: in PLAY mode water
+  // spreads one "ring" this often, so you watch it pour and fill (edit mode
+  // shows the finished flow instantly). Smaller = faster flood.
+  water: { reach: 6, tickSeconds: 0.1 },
 
   // --- Physics --------------------------------------------------------------
   gravity: -20, // snappier than -9.81 for a platformer. Try -3 for the moon!

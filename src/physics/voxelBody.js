@@ -92,6 +92,20 @@ export function createVoxelBody(world) {
     return colliderCount;
   }
 
+  // Add one water kill-sensor at a cell (used by the ticked PLAY-mode water sim
+  // as the flood advances, so you're only in danger where water has reached).
+  function addWaterSensor(x, y, z) {
+    if (!body) return;
+    const collider = world.createCollider(
+      RAPIER.ColliderDesc.cuboid(SENSOR_HALF, SENSOR_HALF, SENSOR_HALF)
+        .setTranslation(x + 0.5, y + 0.5, z + 0.5)
+        .setSensor(true)
+        .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS),
+      body,
+    );
+    sensors.set(collider.handle, { blockKey: 'hazard', cell: [x, y, z], collider });
+  }
+
   // Remove a single sensor (used when a coin is collected).
   function removeSensor(handle) {
     const info = sensors.get(handle);
@@ -103,6 +117,7 @@ export function createVoxelBody(world) {
   return {
     rebuild,
     remove,
+    addWaterSensor,
     removeSensor,
     get sensors() {
       return sensors;
