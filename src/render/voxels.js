@@ -45,6 +45,10 @@ export function createVoxelRenderer(scene) {
       const count = counts.get(def.key) || 0;
       if (count === 0) continue;
       const material = new THREE.MeshLambertMaterial({ color: def.color });
+      if (def.opacity !== undefined) {
+        material.transparent = true;
+        material.opacity = def.opacity; // e.g. water reads as see-through
+      }
       const mesh = new THREE.InstancedMesh(CUBE, material, count);
       mesh.name = `voxels:${def.key}`;
       pools.set(def.key, { mesh, material, next: 0 });
