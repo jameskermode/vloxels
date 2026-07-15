@@ -149,7 +149,7 @@ export function createEditor({ renderer, camera, level, voxels, getSelectedId, o
 
   let onLayerChange = null;
   function setLayer(y) {
-    workingLayer = Math.max(0, Math.min(CONFIG.grid.y - 1, y));
+    workingLayer = Math.max(0, Math.min(level.sizeY - 1, y));
     updateLayerGrid();
     updateHighlight();
     if (onLayerChange) onLayerChange(workingLayer);

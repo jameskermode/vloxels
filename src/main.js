@@ -130,11 +130,12 @@ async function main() {
       alert('That file is not a Vloxels level.');
       return;
     }
-    if (incoming.blocks.length !== level.blocks.length) {
-      alert('That level is a different grid size — not supported yet.');
-      return;
-    }
-    level.blocks.set(incoming.blocks);
+    // Adopt the incoming level's size (levels can be any size). We mutate the
+    // existing `level` object in place so the editor/renderers keep their ref.
+    level.sizeX = incoming.sizeX;
+    level.sizeY = incoming.sizeY;
+    level.sizeZ = incoming.sizeZ;
+    level.blocks = incoming.blocks;
     level.name = incoming.name;
     voxels.rebuild(level);
     spinners.rebuild(level);

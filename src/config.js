@@ -4,8 +4,9 @@
 
 export const CONFIG = {
   // --- Level grid -----------------------------------------------------------
-  // Size of the build volume in voxels: 32 wide, 8 tall, 32 deep.
-  grid: { x: 32, y: 8, z: 32 },
+  // Size of the build volume in voxels: 64 wide, 16 tall, 64 deep.
+  // (Levels store their own size, so smaller saved/example levels still load.)
+  grid: { x: 64, y: 16, z: 64 },
   voxelSize: 1, // world units per voxel (keep at 1 — lots of code assumes it)
 
   // --- Renderer -------------------------------------------------------------
