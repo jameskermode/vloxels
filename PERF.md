@@ -11,6 +11,7 @@ Toggle the on-screen counter with **F** (shows fps + ms/physics-step).
 |-----------|-------|-------------|------------|-------------------|
 | 4 — physics sandbox | starter platform + debug balls | 60 | 37 | _not captured_ |
 | 5 — play mode | starter platform + player (CCD + grounded ray/step) | 60 | 35 | ~0.5 |
+| 6 — spinners + rules | player + coin + blades + platform + sensors | 60 | 35 | ~2 |
 
 ## Notes
 
@@ -18,5 +19,8 @@ Toggle the on-screen counter with **F** (shows fps + ms/physics-step).
   30 fps Pi target.
 - **M5 (2026-07-15):** Pi 35 fps, ~0.5 ms/physics-step — comfortably inside
   both budgets (target 30 fps, red line 4 ms/step). The player's CCD +
-  per-step grounded raycast add negligible CPU. Good headroom before spinners
-  (kinematic bodies) land in M6; recheck step time then.
+  per-step grounded raycast add negligible CPU.
+- **M6 (2026-07-15):** Pi 35 fps, ~2 ms/physics-step. The kinematic spinners
+  (blades/platform) roughly 4×'d the step time vs M5, but it's still half the
+  4 ms red line and fps held at 35. Watch it if a level piles on many
+  blades/platforms; first levers are spinner count and CCD scope.

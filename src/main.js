@@ -22,8 +22,10 @@ import {
   createModeButton,
   createCoinCounter,
   createWinOverlay,
+  createLevelToolbar,
 } from './ui/hud.js';
-import { load, createAutosaver } from './storage.js';
+import { createTouchControls } from './ui/touch.js';
+import { load, save, createAutosaver, exportLevel, readLevelFile } from './storage.js';
 import { createPhysicsWorld } from './physics/world.js';
 import { createVoxelBody } from './physics/voxelBody.js';
 import { createSpinnerBodies } from './physics/spinnerBodies.js';
@@ -31,6 +33,7 @@ import { createDebugBalls } from './debugBalls.js';
 import { createPlayer } from './play/player.js';
 import { createFollowCamera } from './play/camera.js';
 import { createRules } from './play/rules.js';
+import { sfx } from './sfx.js';
 
 function buildStarterLevel() {
   const level = new Level(CONFIG.grid.x, CONFIG.grid.y, CONFIG.grid.z, 'My Level');
@@ -107,6 +110,55 @@ async function main() {
 
   const coinCounter = createCoinCounter();
   const winOverlay = createWinOverlay({ onReplay: () => restart() });
+  const touch = createTouchControls({ onJump: () => mode === 'play' && play.player.requestJump() });
+
+  // Copy an imported/example level's data into our live level object (kept
+  // const so the editor/renderers keep their reference), then refresh + save.
+  function replaceLevel(obj) {
+    let incoming;
+    try {
+      incoming = Level.fromJSON(obj);
+    } catch (err) {
+      alert('That file is not a Vloxels level.');
+      return;
+    }
+    if (incoming.blocks.length !== level.blocks.length) {
+      alert('That level is a different grid size — not supported yet.');
+      return;
+    }
+    level.blocks.set(incoming.blocks);
+    level.name = incoming.name;
+    voxels.rebuild(level);
+    spinners.rebuild(level);
+    save(level);
+  }
+
+  // Load the bundled example manifest (best-effort; empty if unavailable).
+  let examples = [];
+  try {
+    examples = await (await fetch('levels/index.json')).json();
+  } catch {
+    examples = [];
+  }
+
+  const toolbar = createLevelToolbar({
+    onNew: () => {
+      if (mode !== 'edit') return;
+      level.blocks.set(buildStarterLevel().blocks);
+      level.name = 'My Level';
+      voxels.rebuild(level);
+      spinners.rebuild(level);
+      save(level);
+    },
+    onExport: () => exportLevel(level),
+    onImport: (file) => readLevelFile(file).then(replaceLevel).catch(() => alert('Could not read that file.')),
+    examples,
+    onLoadExample: (file) =>
+      fetch(`levels/${file}`)
+        .then((r) => r.json())
+        .then(replaceLevel)
+        .catch(() => alert('Could not load that example.')),
+  });
 
   // --- Mode management ------------------------------------------------------
   let mode = 'edit';
@@ -131,9 +183,18 @@ async function main() {
       terrain,
       spinners,
       hooks: {
-        onRespawn: () => player.respawn(),
-        onCoin: (n) => coinCounter.set(n),
-        onWin: (n) => winOverlay.show(n, totalCoins),
+        onRespawn: () => {
+          player.respawn();
+          sfx.respawn();
+        },
+        onCoin: (n) => {
+          coinCounter.set(n);
+          sfx.coin();
+        },
+        onWin: (n) => {
+          winOverlay.show(n, totalCoins);
+          sfx.win();
+        },
       },
     });
     coinCounter.show(totalCoins);
@@ -142,6 +203,8 @@ async function main() {
     editor.setActive(false);
     palette.el.style.display = 'none';
     layerControl.el.style.display = 'none';
+    toolbar.el.style.display = 'none';
+    touch.setEnabled(true);
     followCam.reset();
     followCam.snapTo(player.position());
 
@@ -173,6 +236,8 @@ async function main() {
     editor.setActive(true);
     palette.el.style.display = '';
     layerControl.el.style.display = '';
+    toolbar.el.style.display = '';
+    touch.setEnabled(false);
     modeButton.setMode('edit');
     console.log('[vloxels] EDIT — build away. Autosaved.');
   }
@@ -226,7 +291,11 @@ async function main() {
     if (keys.has('KeyS') || keys.has('ArrowDown')) f -= 1;
     if (keys.has('KeyD') || keys.has('ArrowRight')) r += 1;
     if (keys.has('KeyA') || keys.has('ArrowLeft')) r -= 1;
-    if (f === 0 && r === 0) return { x: 0, z: 0 };
+    // Touch joystick (analog) adds in too.
+    const tv = touch.getVector();
+    f += tv.y;
+    r += tv.x;
+    if (Math.abs(f) < 0.01 && Math.abs(r) < 0.01) return { x: 0, z: 0 };
     const { forward, right } = followCam.basis();
     const dir = new THREE.Vector3().addScaledVector(forward, f).addScaledVector(right, r);
     dir.y = 0;

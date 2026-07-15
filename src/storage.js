@@ -38,3 +38,24 @@ export function createAutosaver(delay = 1000) {
     timer = setTimeout(() => save(level), delay);
   };
 }
+
+// --- File export / import (how levels travel between machines) --------------
+
+// Download the level as a .json file (named after the level).
+export function exportLevel(level) {
+  const json = JSON.stringify(level.toJSON(), null, 0);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const safeName = (level.name || 'level').replace(/[^a-z0-9-_]+/gi, '_').toLowerCase();
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${safeName}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Read a File (from an <input type="file">) and resolve to a parsed object
+// suitable for Level.fromJSON. Rejects if it isn't a vloxels level.
+export function readLevelFile(file) {
+  return file.text().then((text) => JSON.parse(text));
+}

@@ -179,6 +179,90 @@ export function createWinOverlay({ onReplay }) {
   };
 }
 
+// Edit-mode toolbar: New, Export, Import, and an Examples picker. Callbacks:
+//   onNew(), onExport(), onImport(File), onLoadExample(file)
+export function createLevelToolbar({ onNew, onExport, onImport, examples, onLoadExample }) {
+  const bar = document.createElement('div');
+  Object.assign(bar.style, {
+    position: 'fixed',
+    left: '8px',
+    bottom: '10px',
+    display: 'flex',
+    gap: '6px',
+    alignItems: 'center',
+    padding: '6px',
+    background: 'rgba(0,0,0,0.45)',
+    borderRadius: '10px',
+    zIndex: '10',
+  });
+
+  const mkBtn = (label, fn) => {
+    const b = document.createElement('button');
+    b.textContent = label;
+    Object.assign(b.style, {
+      minHeight: '40px',
+      padding: '0 10px',
+      border: 'none',
+      borderRadius: '8px',
+      background: '#2a3550',
+      color: '#fff',
+      font: '600 13px system-ui, sans-serif',
+      cursor: 'pointer',
+    });
+    b.addEventListener('pointerdown', (e) => e.stopPropagation());
+    b.addEventListener('click', fn);
+    return b;
+  };
+
+  bar.appendChild(mkBtn('New', onNew));
+  bar.appendChild(mkBtn('Export', onExport));
+
+  // Import via a hidden file input.
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = 'application/json,.json';
+  fileInput.style.display = 'none';
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) onImport(fileInput.files[0]);
+    fileInput.value = '';
+  });
+  bar.appendChild(mkBtn('Import', () => fileInput.click()));
+  bar.appendChild(fileInput);
+
+  // Examples dropdown.
+  if (examples && examples.length) {
+    const sel = document.createElement('select');
+    Object.assign(sel.style, {
+      minHeight: '40px',
+      borderRadius: '8px',
+      border: 'none',
+      background: '#2a3550',
+      color: '#fff',
+      font: '600 13px system-ui, sans-serif',
+      padding: '0 8px',
+    });
+    const def = document.createElement('option');
+    def.textContent = 'Examples…';
+    def.value = '';
+    sel.appendChild(def);
+    for (const ex of examples) {
+      const o = document.createElement('option');
+      o.textContent = ex.name;
+      o.value = ex.file;
+      sel.appendChild(o);
+    }
+    sel.addEventListener('pointerdown', (e) => e.stopPropagation());
+    sel.addEventListener('change', () => {
+      if (sel.value) onLoadExample(sel.value);
+      sel.value = '';
+    });
+    bar.appendChild(sel);
+  }
+
+  document.body.appendChild(bar);
+  return { el: bar };
+}
+
 // The big EDIT / PLAY mode toggle button. onToggle() is called on click.
 export function createModeButton({ onToggle }) {
   const btn = document.createElement('button');

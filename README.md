@@ -1,11 +1,14 @@
 # Vloxels
 
-A 3D Bloxels-style game: build a voxel level on a grid, then play it as a
-third-person platformer. The signature feature is **spinning objects** with
-**real physics** — spinning platforms carry you, blades knock you flying.
+A 3D Bloxels-style game: **build** a voxel level on a grid, then **play** it as
+a third-person platformer. The signature feature is **spinning objects** with
+**real physics** — spinning platforms carry you, and spinning blades knock you
+flying.
 
 Built by a parent + 9-year-old team, so the code favours readability over
-cleverness. All the fun tuning knobs live in one file: [`src/config.js`](src/config.js).
+cleverness. All the fun tuning knobs live in one place:
+[`src/config.js`](src/config.js) — try moon gravity, faster blades, a higher
+jump.
 
 ## Running it
 
@@ -14,62 +17,85 @@ npm install
 npm run dev      # dev server, reachable on the LAN (for Pi/tablet playtests)
 ```
 
-Then open the printed URL. On the same network, the Raspberry Pi 400 and
-tablets can open the `http://<macbook-ip>:5173/` URL to playtest.
+Open the printed **Network** URL on the MacBook; open the same URL on the
+Raspberry Pi 400 and tablets on the same Wi-Fi to playtest.
 
-Production build:
+Production build / preview:
 
 ```bash
-npm run build    # outputs static site to dist/
+npm run build    # static site -> dist/
 npm run preview  # serve the built site (also --host)
 ```
 
-To run standalone on the Pi you can `npm run build` there too, then serve
-`dist/` with `npx serve dist` or `python3 -m http.server`.
+To run standalone on the Pi: `npm run build` there, then serve `dist/` with
+`npx serve dist` or `python3 -m http.server`.
 
-## Controls (grows each milestone)
+## Play online (tablets)
 
-Editor:
-- **Tap / left-click** — place the selected block (on a voxel face it snaps to
-  the next cell; on empty space it lands on the working layer).
+Pushing to `main` auto-deploys to **GitHub Pages** via
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml). One-time setup:
+repo **Settings → Pages → Source: GitHub Actions**. After that the game is
+playable from the Pages URL on any tablet, no install.
+
+## Controls
+
+**Everywhere**
+- **Tab** or the **▶ Play / ■ Stop** button — switch EDIT ⇄ PLAY.
+- **F** — toggle the fps / physics step-time counter.
+
+**Edit mode**
+- **Tap / left-click** — place the selected block (snaps to the next cell on a
+  face; lands on the working layer in empty space).
 - **Right-click / long-press** — remove the block under the pointer.
 - **Drag** — orbit the camera.
-- **`[` / `]`** or the on-screen **▲ / ▼** — move the working layer up/down
-  (build in mid-air).
-- **F** — toggle the fps / physics-step-time counter.
+- **`[` / `]`** or on-screen **▲ / ▼** — move the working layer (build in
+  mid-air).
+- Bottom-left toolbar: **New**, **Export** (download `.json`), **Import**, and
+  an **Examples** picker. Your level also autosaves to the browser.
 
-Play:
-- **▶ Play / ■ Stop** button, or **Tab** — switch between EDIT and PLAY.
-- **WASD / arrow keys** — move (relative to the camera).
-- **Space** — jump (with coyote-time + jump-buffer, so it feels forgiving).
-- **B** (in play) — drop a physics debug ball near the player, for fun.
-- Fall off the level and you respawn at the **start** block.
+**Play mode**
+- **WASD / arrow keys**, or the **touch joystick** (left half) — move
+  (camera-relative).
+- **Space**, or the **⤒ Jump** button (right half) — jump (with coyote-time +
+  jump-buffer, so it's forgiving).
+- **B** — drop a physics debug ball near the player, for fun.
 
-Blocks in play:
-- **Coin** — spins & bobs; touch it to collect (see the 🪙 tally up top).
-- **Blades** — crossed bars spinning fast; they physically knock you flying.
-- **Platform** — a slow spinning platform that carries you around as you stand
-  on it.
-- **Water** — fall in and you respawn.
-- **Goal** — reach it to win (with your coin tally + a Replay button).
+## Blocks
 
-Your level autosaves to the browser and reloads next time. Touch controls and
-export/import arrive in Milestone 7.
+| Block | What it does |
+|-------|--------------|
+| **Grass / Brick** | solid terrain you stand on |
+| **Coin** | spins & bobs; touch to collect (🪙 tally up top) |
+| **Blades** | crossed bars spinning fast — physically knock you flying |
+| **Platform** | slow spinning platform that carries you as you stand on it |
+| **Water** | fall in and you respawn |
+| **Start** | where the player spawns (only one) |
+| **Goal** | reach it to win, with your coin tally + Replay (only one) |
 
-## Milestones
-
-See [`VLOXELS_SPEC.md`](VLOXELS_SPEC.md) for the full brief. Built in order:
-
-1. **Scaffold + spinning cube** ← _current_
-2. Level + instanced voxels
-3. Editor
-4. Physics sandbox
-5. Play mode
-6. Spinners + rules
-7. Touch + polish
+Adding a new block type is one entry in [`src/blocks.js`](src/blocks.js).
 
 ## Level format
 
-Levels are versioned JSON (see the spec) and persist to `localStorage`, with
-export/import as `.json` files so they travel between the MacBook, Pi and
-tablets. Bundled example levels live in `public/levels/`.
+Levels are versioned JSON — a flat grid of block ids stored as base64:
+
+```json
+{ "format": "vloxels-level", "version": 1, "name": "Coin Run",
+  "size": [32, 8, 32], "blocks": "<base64 Uint8Array>" }
+```
+
+They persist to `localStorage` and export/import as files, so they travel
+between the MacBook, Pi and tablets. Bundled examples live in
+[`public/levels/`](public/levels/): **Coin Run**, **Blade Gauntlet**,
+**Spin Bridge**.
+
+## Performance
+
+Targets 60 fps on the MacBook, 30 fps on the Pi 400. See [`PERF.md`](PERF.md)
+for measured numbers per milestone. Key rules: instanced voxels, greedy-merged
+colliders, fixed 60 Hz physics, no shadow maps, pixel ratio capped at 1.5.
+
+## Project layout
+
+See [`VLOXELS_SPEC.md`](VLOXELS_SPEC.md) for the full design brief. Source is
+organised into `render/`, `physics/`, `play/`, `edit/`, and `ui/` under
+[`src/`](src/).
