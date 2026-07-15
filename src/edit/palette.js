@@ -8,7 +8,7 @@ import { BLOCK_LIST } from '../blocks.js';
 const LABELS = {
   solid: 'Grass',
   brick: 'Brick',
-  hazard: 'Lava',
+  hazard: 'Water',
   coin: 'Coin',
   spinner: 'Blades',
   platformSpin: 'Platform',

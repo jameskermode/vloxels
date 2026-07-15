@@ -14,7 +14,7 @@
 export const BLOCKS = {
   solid: { id: 1, color: 0x7ec850, solid: true },
   brick: { id: 2, color: 0xb0522d, solid: true },
-  hazard: { id: 3, color: 0xe04040, solid: false, kills: true },
+  hazard: { id: 3, color: 0x3aa0e8, solid: false, kills: true }, // water: fall in = respawn
   coin: { id: 4, color: 0xffd24a, solid: false, collect: true, spinner: 'coin' },
   spinner: { id: 5, color: 0xc040e0, solid: false, kills: false, spinner: 'blades' },
   platformSpin: { id: 6, color: 0x40a0e0, solid: false, spinner: 'platform' },

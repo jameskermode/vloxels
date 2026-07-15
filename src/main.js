@@ -1,12 +1,14 @@
 // main.js — bootstrap for Vloxels.
 //
-// Milestone 1: prove the toolchain (Rapier wasm + Three.js) end-to-end.
-// Milestone 2: level data model + block registry + instanced voxel rendering.
-// Milestone 3: the editor — place/remove, palette, layers, autosave.
-// Milestone 4: physics sandbox — greedy-merged static colliders from the level
-//              + droppable debug balls (press B to drop, C to reset).
+// M1: toolchain.  M2: level + instanced voxels.  M3: editor.
+// M4: physics sandbox (merged colliders + debug balls).
+// M5: PLAY mode — player capsule, camera-relative movement, jump, follow
+//     camera, EDIT/PLAY toggle, respawn on falling.
 //
-// Later milestones add the player + play mode + spinners.
+// Two modes:
+//   EDIT — orbit camera, place/remove blocks (no physics).
+//   PLAY — build the physics world from the level, spawn the player at `start`,
+//          play. Leaving PLAY frees the world and restores the level snapshot.
 
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
@@ -18,11 +20,13 @@ import { createRenderer, createScene, createCamera, handleResize } from './rende
 import { createVoxelRenderer } from './render/voxels.js';
 import { createPalette } from './edit/palette.js';
 import { createEditor } from './edit/editor.js';
-import { createFpsCounter, createLayerControl } from './ui/hud.js';
+import { createFpsCounter, createLayerControl, createModeButton } from './ui/hud.js';
 import { load, createAutosaver } from './storage.js';
 import { createPhysicsWorld } from './physics/world.js';
 import { createVoxelBody } from './physics/voxelBody.js';
 import { createDebugBalls } from './debugBalls.js';
+import { createPlayer } from './play/player.js';
+import { createFollowCamera } from './play/camera.js';
 
 function buildStarterLevel() {
   const level = new Level(CONFIG.grid.x, CONFIG.grid.y, CONFIG.grid.z, 'My Level');
@@ -37,6 +41,14 @@ function buildStarterLevel() {
   return level;
 }
 
+// Where the player capsule spawns: above the `start` block if there is one,
+// else high over the middle of the grid.
+function spawnFor(level) {
+  const s = level.find(BLOCKS.start.id);
+  if (s) return { x: s[0] + 0.5, y: s[1] + 1.4, z: s[2] + 0.5 };
+  return { x: CONFIG.grid.x / 2, y: CONFIG.grid.y + 1.5, z: CONFIG.grid.z / 2 };
+}
+
 async function main() {
   await RAPIER.init();
   console.log(`[vloxels] Rapier ${RAPIER.version()} ready.`);
@@ -47,50 +59,20 @@ async function main() {
   const camera = createCamera();
   handleResize(renderer, camera);
 
+  // EDIT camera (orbit). Disabled while playing.
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.target.set(CONFIG.grid.x / 2, 2, CONFIG.grid.z / 2);
   controls.enableDamping = true;
   controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: null };
   controls.update();
 
+  const followCam = createFollowCamera(camera);
+
   const level = load() || buildStarterLevel();
   const voxels = createVoxelRenderer(scene);
   voxels.rebuild(level);
 
-  // --- Physics sandbox (Milestone 4) ----------------------------------------
-  // The world is created once; the terrain body is (re)built from the level on
-  // demand. Physics only steps while `physicsOn`.
-  const physics = createPhysicsWorld();
-  const terrain = createVoxelBody(physics.world);
-  const balls = createDebugBalls(physics.world, scene);
-  let physicsOn = false;
-
-  function startPhysics() {
-    if (!physicsOn) {
-      terrain.rebuild(level);
-      physicsOn = true;
-      console.log('[vloxels] physics ON — dropping balls. Press C to reset.');
-    }
-  }
-  function resetPhysics() {
-    balls.clear();
-    terrain.remove();
-    physicsOn = false;
-    console.log('[vloxels] physics OFF — sandbox reset.');
-  }
-  function dropBall() {
-    startPhysics();
-    // Drop above the middle of the grid with a small random scatter.
-    const jitter = () => (Math.random() - 0.5) * 3;
-    balls.drop(CONFIG.grid.x / 2 + jitter(), CONFIG.grid.y + 3, CONFIG.grid.z / 2 + jitter());
-  }
-
-  window.addEventListener('keydown', (e) => {
-    if (e.key === 'b' || e.key === 'B') dropBall();
-    else if (e.key === 'c' || e.key === 'C') resetPhysics();
-  });
-
-  // --- Editor ---------------------------------------------------------------
+  // Editor + UI.
   const palette = createPalette();
   const autosave = createAutosaver(1000);
   const editor = createEditor({
@@ -99,18 +81,113 @@ async function main() {
     level,
     voxels,
     getSelectedId: palette.getSelectedId,
-    onChange: (lvl) => {
-      autosave(lvl);
-      if (physicsOn) terrain.rebuild(lvl); // keep colliders in sync with edits
-    },
+    onChange: (lvl) => autosave(lvl),
   });
-
   const layerControl = createLayerControl({
     onUp: () => editor.setLayer(editor.getLayer() + 1),
     onDown: () => editor.setLayer(editor.getLayer() - 1),
   });
   editor.onLayerChange = (y) => layerControl.setValue(y);
   layerControl.setValue(editor.getLayer());
+
+  // --- Mode management ------------------------------------------------------
+  let mode = 'edit';
+  let play = null; // { physics, terrain, player, balls, snapshot } while playing
+
+  function enterPlay() {
+    const snapshot = level.blocks.slice(); // so coins/edits restore on stop (M6)
+    const physics = createPhysicsWorld();
+    const terrain = createVoxelBody(physics.world);
+    terrain.rebuild(level);
+    const player = createPlayer(physics.world, scene, spawnFor(level));
+    const balls = createDebugBalls(physics.world, scene); // B still drops balls, for fun
+
+    controls.enabled = false;
+    editor.setActive(false);
+    palette.el.style.display = 'none';
+    layerControl.el.style.display = 'none';
+    followCam.reset();
+    followCam.snapTo(player.position());
+
+    play = { physics, terrain, player, balls, snapshot };
+    mode = 'play';
+    modeButton.setMode('play');
+    console.log('[vloxels] PLAY — WASD/arrows move, Space jumps, B drops a ball.');
+  }
+
+  function exitPlay() {
+    play.balls.clear();
+    play.player.dispose();
+    play.physics.free();
+    level.blocks.set(play.snapshot); // restore edits/coins
+    voxels.rebuild(level);
+
+    controls.enabled = true;
+    controls.target.set(CONFIG.grid.x / 2, 2, CONFIG.grid.z / 2);
+    controls.update();
+    editor.setActive(true);
+    palette.el.style.display = '';
+    layerControl.el.style.display = '';
+
+    play = null;
+    mode = 'edit';
+    modeButton.setMode('edit');
+    console.log('[vloxels] EDIT — build away. Autosaved.');
+  }
+
+  function toggleMode() {
+    if (mode === 'edit') enterPlay();
+    else exitPlay();
+  }
+
+  const modeButton = createModeButton({ onToggle: toggleMode });
+  modeButton.setMode('edit');
+
+  // --- Input (keyboard) -----------------------------------------------------
+  const keys = new Set();
+  let spaceArmed = true; // require a fresh press to jump (no key-repeat spam)
+
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'Tab') {
+      e.preventDefault();
+      toggleMode();
+      return;
+    }
+    if (e.code === 'Space') {
+      e.preventDefault();
+      if (mode === 'play' && spaceArmed) {
+        play.player.requestJump();
+        spaceArmed = false;
+      }
+      return;
+    }
+    if ((e.key === 'b' || e.key === 'B') && mode === 'play') {
+      play.balls.drop(play.player.position().x, play.player.position().y + 4, play.player.position().z);
+    }
+    keys.add(e.code);
+  });
+  window.addEventListener('keyup', (e) => {
+    if (e.code === 'Space') spaceArmed = true;
+    keys.delete(e.code);
+  });
+
+  // Turn the pressed keys into a camera-relative unit move direction.
+  function readMoveIntent() {
+    let f = 0;
+    let r = 0;
+    if (keys.has('KeyW') || keys.has('ArrowUp')) f += 1;
+    if (keys.has('KeyS') || keys.has('ArrowDown')) f -= 1;
+    if (keys.has('KeyD') || keys.has('ArrowRight')) r += 1;
+    if (keys.has('KeyA') || keys.has('ArrowLeft')) r -= 1;
+    if (f === 0 && r === 0) return { x: 0, z: 0 };
+    const { forward, right } = followCam.basis();
+    const dir = new THREE.Vector3()
+      .addScaledVector(forward, f)
+      .addScaledVector(right, r);
+    dir.y = 0;
+    dir.normalize();
+    return { x: dir.x, z: dir.z };
+  }
 
   // --- Loop -----------------------------------------------------------------
   const fpsCounter = createFpsCounter();
@@ -120,13 +197,16 @@ async function main() {
     const dt = Math.min((now - last) / 1000, CONFIG.maxFrameDt);
     last = now;
 
-    controls.update();
-
-    if (physicsOn) {
-      const stepMs = physics.step(dt);
-      balls.sync();
+    if (mode === 'play') {
+      const intent = readMoveIntent();
+      play.player.setIntent(intent.x, intent.z);
+      const stepMs = play.physics.step(dt, (fixedDt) => play.player.fixedUpdate(fixedDt));
+      play.player.syncMesh();
+      play.balls.sync();
+      followCam.update(dt, play.player.position());
       fpsCounter.setStepMs(stepMs);
     } else {
+      controls.update();
       fpsCounter.setStepMs(0);
     }
 
@@ -136,10 +216,7 @@ async function main() {
   }
   requestAnimationFrame(frame);
 
-  console.log(
-    '[vloxels] Milestone 4 running — build with the editor, then press B to drop ' +
-      'physics balls onto your terrain, C to reset. F for fps/step-time.',
-  );
+  console.log('[vloxels] Milestone 5 running — press ▶ Play (or Tab) to play your level.');
 }
 
 main().catch((err) => {

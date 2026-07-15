@@ -25,6 +25,7 @@ export function createEditor({ renderer, camera, level, voxels, getSelectedId, o
   const hitPoint = new THREE.Vector3();
 
   let workingLayer = 0;
+  let enabled = true; // false in PLAY mode: ignore all editing input
 
   // --- Placement highlight (wireframe cube where the next block will go) -----
   const highlight = new THREE.LineSegments(
@@ -159,6 +160,7 @@ export function createEditor({ renderer, camera, level, voxels, getSelectedId, o
   let down = null; // { x, y, button, time, timer }
 
   function onPointerDown(e) {
+    if (!enabled) return; // PLAY mode: no editing
     if (e.target !== dom) return; // ignore taps on palette/HUD overlays
     setPointer(e);
     down = { x: e.clientX, y: e.clientY, button: e.button, moved: false, timer: null };
@@ -174,6 +176,7 @@ export function createEditor({ renderer, camera, level, voxels, getSelectedId, o
   }
 
   function onPointerMove(e) {
+    if (!enabled) return;
     setPointer(e);
     if (down) {
       if (Math.hypot(e.clientX - down.x, e.clientY - down.y) > TAP_MOVE_PX) {
@@ -202,6 +205,7 @@ export function createEditor({ renderer, camera, level, voxels, getSelectedId, o
   }
 
   function onKeyDown(e) {
+    if (!enabled) return;
     if (e.key === '[') setLayer(workingLayer - 1);
     else if (e.key === ']') setLayer(workingLayer + 1);
   }
@@ -220,8 +224,9 @@ export function createEditor({ renderer, camera, level, voxels, getSelectedId, o
     set onLayerChange(fn) {
       onLayerChange = fn;
     },
-    // Show/hide the editing helpers (used when we add PLAY mode in M5).
+    // Enable/disable the whole editor (PLAY mode disables it and hides helpers).
     setActive(active) {
+      enabled = active;
       highlight.visible = false;
       layerGrid.visible = active;
     },

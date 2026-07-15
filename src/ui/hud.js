@@ -92,3 +92,38 @@ export function createLayerControl({ onUp, onDown }) {
     },
   };
 }
+
+// The big EDIT / PLAY mode toggle button. onToggle() is called on click.
+export function createModeButton({ onToggle }) {
+  const btn = document.createElement('button');
+  Object.assign(btn.style, {
+    position: 'fixed',
+    top: '64px',
+    right: '8px',
+    minWidth: '96px',
+    minHeight: '48px',
+    border: 'none',
+    borderRadius: '10px',
+    color: '#fff',
+    font: '700 16px system-ui, sans-serif',
+    cursor: 'pointer',
+    zIndex: '10',
+  });
+  btn.addEventListener('pointerdown', (e) => e.stopPropagation());
+  btn.addEventListener('click', onToggle);
+  document.body.appendChild(btn);
+
+  return {
+    el: btn,
+    // Show what pressing it will DO next (so it reads as an action).
+    setMode(mode) {
+      if (mode === 'play') {
+        btn.textContent = '■ Stop';
+        btn.style.background = '#c0392b';
+      } else {
+        btn.textContent = '▶ Play';
+        btn.style.background = '#27ae60';
+      }
+    },
+  };
+}
