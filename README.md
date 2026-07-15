@@ -58,7 +58,6 @@ playable from the Pages URL on any tablet, no install.
   (camera-relative).
 - **Space**, or the **⤒ Jump** button (right half) — jump (with coyote-time +
   jump-buffer, so it's forgiving).
-- **B** — drop a physics debug ball near the player, for fun.
 
 ## Blocks
 

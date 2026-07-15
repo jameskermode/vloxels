@@ -292,8 +292,11 @@ async function main() {
       return;
     }
     if ((e.key === 'b' || e.key === 'B') && mode === 'play') {
+      // Hidden Easter egg: rain bouncy balls near the player. Scatter them a
+      // little so they don't stack in a perfect vertical column.
       const p = play.player.position();
-      play.balls.drop(p.x, p.y + 4, p.z);
+      const jitter = () => (Math.random() - 0.5) * 1.2;
+      play.balls.drop(p.x + jitter(), p.y + 4, p.z + jitter());
     }
     keys.add(e.code);
   });
