@@ -56,8 +56,8 @@ playable from the Pages URL on any tablet, no install.
 **Play mode**
 - **WASD / arrow keys**, or the **touch joystick** (left half) — move
   (camera-relative).
-- **Space**, or the **⤒ Jump** button (right half) — jump (with coyote-time +
-  jump-buffer, so it's forgiving); underwater it swims you up.
+- **Space**, or the **⤒ Jump** button (right half) — jump. In water, **hold**
+  to swim up (you can ride a waterfall up!), or **tap** to hop out onto a ledge.
 
 ## Blocks
 

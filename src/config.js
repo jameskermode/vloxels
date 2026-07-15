@@ -66,5 +66,6 @@ export const CONFIG = {
     waterSink: -1.5, // gentle sink speed (units/sec) in deep water
     swimSpeed: 6.5, // max upward swim speed when deep underwater
     swimApproach: 5, // how hard to ease toward the surface (higher = firmer float)
+    swimJump: 6.5, // upward hop from a deliberate tap in water (climb out / up a waterfall)
   },
 };

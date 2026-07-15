@@ -56,22 +56,27 @@ const save = (L, file) => {
   save(L, 'blade-gauntlet.json');
 }
 
-// 4) Waterfall — a spout on a tower pours a cascade down into a shallow pool
-//    you can wade through (water no longer hurts you); the spout cascades in
-//    and splashes across. Hop the spinning stone to cross without getting wet.
+// 4) Waterfall — wade the shallow pool, or SWIM UP the falls! Hold jump inside
+//    the cascade to ride the water up, then TAP jump at the top to hop out and
+//    grab the crest coins. (Water no longer hurts you.)
 {
   const L = new Level(32, 8, 32, 'Waterfall');
   box(L, 6, 26, 0, 0, 6, 26, B.solid.id); // ground, top y1
   box(L, 12, 20, 1, 1, 12, 18, B.hazard.id); // shallow pool on the ground
-  // West tower with a spout on top that pours EAST only, into the pool.
-  box(L, 10, 11, 1, 5, 14, 16, B.solid.id); // tower, top y6
-  L.set(11, 6, 15, B.hazard.id); // the source
-  L.set(10, 6, 15, B.solid.id); // lip: west
-  L.set(11, 6, 14, B.solid.id); // lip: north
-  L.set(11, 6, 16, B.solid.id); // lip: south  (only east, over the pool, is open)
-  L.set(15, 2, 15, B.platformSpin.id); // a spinning stepping stone across the pool
-  L.set(14, 3, 15, B.coin.id);
-  L.set(17, 3, 15, B.coin.id);
+  // West tower with a 3-wide spout pouring EAST into the pool (a fat cascade
+  // that's easy to swim up).
+  box(L, 10, 11, 1, 5, 13, 17, B.solid.id); // tower, top y6
+  for (const z of [14, 15, 16]) {
+    L.set(11, 6, z, B.hazard.id); // source
+    L.set(10, 6, z, B.solid.id); // west lip
+  }
+  L.set(11, 6, 13, B.solid.id); // north lip
+  L.set(11, 6, 17, B.solid.id); // south lip (so it pours east only)
+  // Reward for swimming to the top: a row of coins at the crest of the falls.
+  for (const z of [14, 15, 16]) L.set(12, 7, z, B.coin.id);
+  // Easy pickings down in the pool + a spinning stone to cross dry.
+  L.set(15, 2, 15, B.platformSpin.id);
+  L.set(18, 3, 15, B.coin.id);
   L.set(8, 1, 16, B.start.id); // on the ground, west of the pool
   L.set(24, 1, 16, B.goal.id); // on the ground, east of the pool
   save(L, 'waterfall.json');

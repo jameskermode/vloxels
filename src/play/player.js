@@ -149,14 +149,17 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false) {
 
     let ny = v.y;
     if (deep) {
-      // Treading deep water (not standing on anything). Swim UP while jump is
-      // held, but only until the HEAD reaches the surface — so you tread
-      // neck-deep and can't walk on top of the water. Release to sink gently.
-      if (swimHeld || jumpBuffer > 0) {
-        const headY = t.y + REACH;
-        const toSurface = col ? col.surfaceY - headY : 0; // >0 = head still under
-        ny = Math.max(0, Math.min(P.swimSpeed, toSurface * P.swimApproach));
+      // Treading deep water (not standing on anything).
+      if (jumpBuffer > 0) {
+        // A deliberate TAP hops you up — climb out onto a ledge, or up a
+        // waterfall crest. (Discrete, so holding can't walk you on top.)
+        ny = P.swimJump;
         jumpBuffer = 0;
+      } else if (swimHeld) {
+        // Holding swims UP only until your HEAD reaches the surface, so you
+        // tread neck-deep and can't stand on top of the water.
+        const toSurface = col ? col.surfaceY - (t.y + REACH) : 0; // >0 = head under
+        ny = Math.max(0, Math.min(P.swimSpeed, toSurface * P.swimApproach));
       } else {
         ny = lerp(v.y, P.waterSink, 0.15); // water drag: gentle sink, not a plummet
       }
