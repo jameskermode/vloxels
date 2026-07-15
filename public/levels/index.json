@@ -4,11 +4,15 @@
     "file": "coin-run.json"
   },
   {
+    "name": "Spin Bridge",
+    "file": "spin-bridge.json"
+  },
+  {
     "name": "Blade Gauntlet",
     "file": "blade-gauntlet.json"
   },
   {
-    "name": "Spin Bridge",
-    "file": "spin-bridge.json"
+    "name": "Waterfall",
+    "file": "waterfall.json"
   }
 ]

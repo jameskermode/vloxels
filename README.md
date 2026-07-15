@@ -85,8 +85,10 @@ Levels are versioned JSON — a flat grid of block ids stored as base64:
 
 They persist to `localStorage` and export/import as files, so they travel
 between the MacBook, Pi and tablets. Bundled examples live in
-[`public/levels/`](public/levels/): **Coin Run**, **Blade Gauntlet**,
-**Spin Bridge**.
+[`public/levels/`](public/levels/): **Coin Run**, **Spin Bridge**,
+**Blade Gauntlet**, and **Waterfall** (regenerate them with
+`node scripts/gen-levels.mjs`). Water in every example is walled in so it
+stays contained.
 
 ## Performance
 
