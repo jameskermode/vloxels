@@ -72,8 +72,10 @@ const save = (L, file) => {
   }
   L.set(11, 6, 13, B.solid.id); // north lip
   L.set(11, 6, 17, B.solid.id); // south lip (so it pours east only)
-  // Reward for swimming to the top: a row of coins at the crest of the falls.
-  for (const z of [14, 15, 16]) L.set(12, 7, z, B.coin.id);
+  // A lookout ledge beside the top of the falls: swim up the cascade, step east
+  // onto it, and grab the coins. (No precise timing needed.)
+  box(L, 13, 15, 4, 4, 14, 16, B.solid.id); // ledge, top y5
+  for (const x of [13, 14, 15]) L.set(x, 5, 15, B.coin.id); // a row along the way east
   // Easy pickings down in the pool + a spinning stone to cross dry.
   L.set(15, 2, 15, B.platformSpin.id);
   L.set(18, 3, 15, B.coin.id);
