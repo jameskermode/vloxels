@@ -100,6 +100,16 @@ export function createWaterSim() {
   };
 }
 
+// Just the placed source blocks (the water's INITIAL state). EDIT mode renders
+// this — you see the blocks you placed, and they flow only when you hit play.
+export function waterSources(level) {
+  const cells = [];
+  level.forEachBlock((x, y, z, id) => {
+    if (id === BLOCKS.hazard.id) cells.push([x, y, z]);
+  });
+  return cells;
+}
+
 export function computeWater(level) {
   const { sizeX, sizeY, sizeZ } = level;
   const MAX = CONFIG.water.reach; // "level" of a source; sideways spread costs 1

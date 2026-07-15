@@ -15,7 +15,7 @@ import { createRenderer, createScene, createCamera, handleResize } from './rende
 import { createVoxelRenderer } from './render/voxels.js';
 import { createSpinners } from './render/spinners.js';
 import { createWater } from './render/water.js';
-import { computeWater, createWaterSim } from './water.js';
+import { waterSources, createWaterSim } from './water.js';
 import { createPalette } from './edit/palette.js';
 import { createEditor } from './edit/editor.js';
 import {
@@ -87,7 +87,9 @@ async function main() {
   const voxels = createVoxelRenderer(scene);
   const spinners = createSpinners(scene);
   const water = createWater(scene);
-  const refreshWater = () => water.rebuild(computeWater(level));
+  // EDIT mode shows the water's initial state — just the source blocks. It
+  // flows (animated) only in PLAY.
+  const refreshWater = () => water.rebuild(waterSources(level));
   voxels.rebuild(level);
   spinners.rebuild(level);
   refreshWater();
