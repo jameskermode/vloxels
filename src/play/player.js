@@ -148,19 +148,22 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false) {
     if (inWater) control = P.waterControl;
 
     let ny = v.y;
-    if (inWater) {
-      // Swim UP while the jump button is held (or freshly tapped). Rise fast
-      // when deep, but EASE toward the surface so you float at the waterline
-      // instead of launching clear of the water in open water.
+    if (deep) {
+      // Treading deep water (not standing on anything). Swim UP while jump is
+      // held, but only until the HEAD reaches the surface — so you tread
+      // neck-deep and can't walk on top of the water. Release to sink gently.
       if (swimHeld || jumpBuffer > 0) {
-        const toSurface = col ? col.surfaceY - feetY : 0; // >0 = below surface
+        const headY = t.y + REACH;
+        const toSurface = col ? col.surfaceY - headY : 0; // >0 = head still under
         ny = Math.max(0, Math.min(P.swimSpeed, toSurface * P.swimApproach));
         jumpBuffer = 0;
-      } else if (deep) {
+      } else {
         ny = lerp(v.y, P.waterSink, 0.15); // water drag: gentle sink, not a plummet
       }
     } else if (jumpBuffer > 0 && coyote > 0) {
-      ny = P.jumpSpeed; // ordinary jump on land
+      // Ordinary jump on land — and on a solid floor under shallow water, so you
+      // just hop out of a puddle rather than hovering on it.
+      ny = P.jumpSpeed;
       jumpBuffer = 0;
       coyote = 0;
     }

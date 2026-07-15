@@ -67,7 +67,7 @@ playable from the Pages URL on any tablet, no install.
 | **Coin** | spins & bobs; touch to collect (🪙 tally up top) |
 | **Blades** | crossed bars spinning fast — physically knock you flying |
 | **Platform** | slow spinning platform that carries you as you stand on it |
-| **Water** | a flowing source — spreads down & sideways (stops at walls); wade through it at half speed and sink into deep water (Space swims up). Doesn't kill you |
+| **Water** | a flowing source — spreads down & sideways. Wade shallow water at half speed; deep water you sink into and tread (hold Space to swim up to a shallow edge). Doesn't kill you |
 | **Start** | where the player spawns (only one) |
 | **Goal** | reach it to win, with your coin tally + Replay (only one) |
 
