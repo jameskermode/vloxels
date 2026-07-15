@@ -29,7 +29,7 @@ export function createPlayer(world, scene, spawn) {
       .setLinearDamping(P.linearDamping)
       .setCcdEnabled(true), // fast blades + thin colliders = tunnelling risk
   );
-  world.createCollider(
+  const collider = world.createCollider(
     RAPIER.ColliderDesc.capsule(P.halfHeight, P.radius)
       .setFriction(P.friction)
       .setRestitution(0),
@@ -50,12 +50,30 @@ export function createPlayer(world, scene, spawn) {
   const down = new THREE.Vector3(0, -1, 0);
   const groundReach = P.halfHeight + P.radius + 0.12; // centre-to-just-below-feet
 
-  function isGrounded() {
+  // Cast down from the capsule centre; returns the body we're standing on (or
+  // null if airborne). Excludes our own body so we don't hit ourselves.
+  function groundBody() {
     const t = body.translation();
     const ray = new RAPIER.Ray(t, down);
-    // solid=true; exclude our own body (7th arg) so we don't hit ourselves.
     const hit = world.castRay(ray, groundReach, true, undefined, undefined, undefined, body);
-    return hit !== null;
+    return hit ? hit.collider.parent() : null;
+  }
+
+  // Velocity of a (possibly rotating) body at the player's position, so a
+  // spinning platform carries and turns the player: v = linvel + angvel × r.
+  function carryVelocity(ground) {
+    if (!ground || !ground.isKinematic()) return { x: 0, z: 0 };
+    const t = body.translation();
+    const c = ground.translation();
+    const w = ground.angvel();
+    const lin = ground.linvel();
+    const rx = t.x - c.x;
+    const ry = t.y - c.y;
+    const rz = t.z - c.z;
+    return {
+      x: lin.x + (w.y * rz - w.z * ry),
+      z: lin.z + (w.x * ry - w.y * rx),
+    };
   }
 
   // Called each render frame by main: set movement intent (world-space unit dir).
@@ -71,14 +89,25 @@ export function createPlayer(world, scene, spawn) {
 
   // Called once per FIXED physics step (before world.step).
   function fixedUpdate(dt) {
-    const grounded = isGrounded();
+    const ground = groundBody();
+    const grounded = ground !== null;
     coyote = grounded ? P.coyoteTime : Math.max(0, coyote - dt);
     if (jumpBuffer > 0) jumpBuffer = Math.max(0, jumpBuffer - dt);
 
     const v = body.linvel();
-    const control = grounded ? P.groundControl : P.airControl;
-    const targetX = intent.x * P.speed;
-    const targetZ = intent.z * P.speed;
+    // Target = the moving surface's velocity + our own input. On a spinning
+    // platform with no input this makes us track the platform (carried); on
+    // static ground carry is zero so we just stop.
+    const carry = carryVelocity(ground);
+    const targetX = carry.x + intent.x * P.speed;
+    const targetZ = carry.z + intent.z * P.speed;
+
+    // How fast are we moving RELATIVE to the surface we're on? If that's much
+    // faster than we can walk, we've been knocked (e.g. by blades) — so ease
+    // off the steering and let the knockback fling us, instead of stomping it.
+    const relSpeed = Math.hypot(v.x - carry.x, v.z - carry.z);
+    const knocked = grounded && relSpeed > P.speed * 1.4;
+    const control = grounded ? (knocked ? P.airControl : P.groundControl) : P.airControl;
 
     let ny = v.y;
     // Jump: buffered press + (grounded or within coyote window).
@@ -119,5 +148,16 @@ export function createPlayer(world, scene, spawn) {
     world.removeRigidBody(body);
   }
 
-  return { body, mesh, setIntent, requestJump, fixedUpdate, respawn, syncMesh, position, dispose };
+  return {
+    body,
+    mesh,
+    colliderHandle: collider.handle,
+    setIntent,
+    requestJump,
+    fixedUpdate,
+    respawn,
+    syncMesh,
+    position,
+    dispose,
+  };
 }

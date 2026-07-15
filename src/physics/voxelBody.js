@@ -9,19 +9,25 @@
 
 import RAPIER from '@dimforge/rapier3d-compat';
 import { CONFIG } from '../config.js';
+import { blockById } from '../blocks.js';
 
 const TERRAIN_FRICTION = 0.8;
 const TERRAIN_RESTITUTION = 0.2; // a little bounce so the debug ball is lively
+const SENSOR_HALF = 0.4; // shrunk sensor cuboid (0.8³) so you must really touch it
 
 export function createVoxelBody(world) {
   let body = null;
   let colliderCount = 0;
+  // collider handle -> { blockKey, cell:[x,y,z], collider } for the non-solid
+  // special blocks (water/coin/goal). rules.js reads this to react to overlaps.
+  const sensors = new Map();
 
   function remove() {
     if (body) {
       world.removeRigidBody(body); // also removes all its colliders
       body = null;
       colliderCount = 0;
+      sensors.clear();
     }
   }
 
@@ -56,16 +62,45 @@ export function createVoxelBody(world) {
       }
     }
 
+    // Sensor colliders for the non-solid special blocks. One shrunk cuboid each,
+    // attached to the same static body. They fire intersection events that
+    // rules.js turns into respawns / coin pickups / winning.
+    level.forEachBlock((x, y, z, id) => {
+      const def = blockById(id);
+      if (!def) return;
+      if (!(def.kills || def.collect || def.wins)) return;
+      const collider = world.createCollider(
+        RAPIER.ColliderDesc.cuboid(SENSOR_HALF, SENSOR_HALF, SENSOR_HALF)
+          .setTranslation(x + 0.5, y + 0.5, z + 0.5)
+          .setSensor(true)
+          .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS),
+        body,
+      );
+      sensors.set(collider.handle, { blockKey: def.key, cell: [x, y, z], collider });
+    });
+
     console.log(
-      `[vloxels] terrain colliders: ${colliderCount}` +
+      `[vloxels] terrain colliders: ${colliderCount}, sensors: ${sensors.size}` +
         (colliderCount > 500 ? '  ⚠️ over the ~500 budget — optimise!' : ''),
     );
     return colliderCount;
   }
 
+  // Remove a single sensor (used when a coin is collected).
+  function removeSensor(handle) {
+    const info = sensors.get(handle);
+    if (!info) return;
+    world.removeCollider(info.collider, false);
+    sensors.delete(handle);
+  }
+
   return {
     rebuild,
     remove,
+    removeSensor,
+    get sensors() {
+      return sensors;
+    },
     get body() {
       return body;
     },

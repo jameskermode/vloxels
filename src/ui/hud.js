@@ -93,6 +93,92 @@ export function createLayerControl({ onUp, onDown }) {
   };
 }
 
+// Coin tally shown while playing.
+export function createCoinCounter() {
+  const el = document.createElement('div');
+  Object.assign(el.style, {
+    position: 'fixed',
+    top: '8px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    padding: '6px 12px',
+    background: 'rgba(0,0,0,0.45)',
+    borderRadius: '10px',
+    color: '#ffd24a',
+    font: '700 18px system-ui, sans-serif',
+    zIndex: '10',
+    display: 'none',
+  });
+  document.body.appendChild(el);
+  let total = 0;
+  function render(n) {
+    el.textContent = `🪙 ${n} / ${total}`;
+  }
+  return {
+    el,
+    show(totalCoins) {
+      total = totalCoins;
+      render(0);
+      el.style.display = '';
+    },
+    set(n) {
+      render(n);
+    },
+    hide() {
+      el.style.display = 'none';
+    },
+  };
+}
+
+// Win overlay: coin tally + Replay button. onReplay() restarts the level.
+export function createWinOverlay({ onReplay }) {
+  const overlay = document.createElement('div');
+  Object.assign(overlay.style, {
+    position: 'fixed',
+    inset: '0',
+    display: 'none',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'column',
+    gap: '18px',
+    background: 'rgba(0,0,0,0.6)',
+    color: '#fff',
+    font: '800 40px system-ui, sans-serif',
+    textAlign: 'center',
+    zIndex: '20',
+  });
+  const title = document.createElement('div');
+  title.textContent = '🎉 You win!';
+  const tally = document.createElement('div');
+  tally.style.font = '600 22px system-ui, sans-serif';
+  const btn = document.createElement('button');
+  btn.textContent = '↻ Replay';
+  Object.assign(btn.style, {
+    minWidth: '160px',
+    minHeight: '56px',
+    border: 'none',
+    borderRadius: '12px',
+    background: '#27ae60',
+    color: '#fff',
+    font: '700 20px system-ui, sans-serif',
+    cursor: 'pointer',
+  });
+  btn.addEventListener('pointerdown', (e) => e.stopPropagation());
+  btn.addEventListener('click', onReplay);
+  overlay.append(title, tally, btn);
+  document.body.appendChild(overlay);
+  return {
+    el: overlay,
+    show(coins, total) {
+      tally.textContent = `Coins: ${coins} / ${total}`;
+      overlay.style.display = 'flex';
+    },
+    hide() {
+      overlay.style.display = 'none';
+    },
+  };
+}
+
 // The big EDIT / PLAY mode toggle button. onToggle() is called on click.
 export function createModeButton({ onToggle }) {
   const btn = document.createElement('button');

@@ -1,14 +1,9 @@
 // main.js — bootstrap for Vloxels.
 //
 // M1: toolchain.  M2: level + instanced voxels.  M3: editor.
-// M4: physics sandbox (merged colliders + debug balls).
-// M5: PLAY mode — player capsule, camera-relative movement, jump, follow
-//     camera, EDIT/PLAY toggle, respawn on falling.
-//
-// Two modes:
-//   EDIT — orbit camera, place/remove blocks (no physics).
-//   PLAY — build the physics world from the level, spawn the player at `start`,
-//          play. Leaving PLAY frees the world and restores the level snapshot.
+// M4: physics sandbox.  M5: play mode (player, movement, jump, camera).
+// M6: spinners + rules — coins, kinematic blades (knockback!), carry-platforms,
+//     water/goal sensors, coin tally + win screen.
 
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
@@ -18,15 +13,24 @@ import { BLOCKS } from './blocks.js';
 import { Level } from './level.js';
 import { createRenderer, createScene, createCamera, handleResize } from './render/scene.js';
 import { createVoxelRenderer } from './render/voxels.js';
+import { createSpinners } from './render/spinners.js';
 import { createPalette } from './edit/palette.js';
 import { createEditor } from './edit/editor.js';
-import { createFpsCounter, createLayerControl, createModeButton } from './ui/hud.js';
+import {
+  createFpsCounter,
+  createLayerControl,
+  createModeButton,
+  createCoinCounter,
+  createWinOverlay,
+} from './ui/hud.js';
 import { load, createAutosaver } from './storage.js';
 import { createPhysicsWorld } from './physics/world.js';
 import { createVoxelBody } from './physics/voxelBody.js';
+import { createSpinnerBodies } from './physics/spinnerBodies.js';
 import { createDebugBalls } from './debugBalls.js';
 import { createPlayer } from './play/player.js';
 import { createFollowCamera } from './play/camera.js';
+import { createRules } from './play/rules.js';
 
 function buildStarterLevel() {
   const level = new Level(CONFIG.grid.x, CONFIG.grid.y, CONFIG.grid.z, 'My Level');
@@ -36,17 +40,24 @@ function buildStarterLevel() {
       level.set(x, 0, z, S.solid.id);
     }
   }
+  level.set(16, 1, 14, S.coin.id);
   level.set(13, 1, 13, S.start.id);
   level.set(19, 1, 19, S.goal.id);
   return level;
 }
 
-// Where the player capsule spawns: above the `start` block if there is one,
-// else high over the middle of the grid.
 function spawnFor(level) {
   const s = level.find(BLOCKS.start.id);
   if (s) return { x: s[0] + 0.5, y: s[1] + 1.4, z: s[2] + 0.5 };
   return { x: CONFIG.grid.x / 2, y: CONFIG.grid.y + 1.5, z: CONFIG.grid.z / 2 };
+}
+
+function countCoins(level) {
+  let n = 0;
+  level.forEachBlock((x, y, z, id) => {
+    if (id === BLOCKS.coin.id) n++;
+  });
+  return n;
 }
 
 async function main() {
@@ -59,7 +70,6 @@ async function main() {
   const camera = createCamera();
   handleResize(renderer, camera);
 
-  // EDIT camera (orbit). Disabled while playing.
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.target.set(CONFIG.grid.x / 2, 2, CONFIG.grid.z / 2);
   controls.enableDamping = true;
@@ -70,7 +80,9 @@ async function main() {
 
   const level = load() || buildStarterLevel();
   const voxels = createVoxelRenderer(scene);
+  const spinners = createSpinners(scene);
   voxels.rebuild(level);
+  spinners.rebuild(level);
 
   // Editor + UI.
   const palette = createPalette();
@@ -81,7 +93,10 @@ async function main() {
     level,
     voxels,
     getSelectedId: palette.getSelectedId,
-    onChange: (lvl) => autosave(lvl),
+    onChange: (lvl) => {
+      autosave(lvl);
+      spinners.rebuild(lvl); // keep coin/blade/platform meshes in sync with edits
+    },
   });
   const layerControl = createLayerControl({
     onUp: () => editor.setLayer(editor.getLayer() + 1),
@@ -90,17 +105,38 @@ async function main() {
   editor.onLayerChange = (y) => layerControl.setValue(y);
   layerControl.setValue(editor.getLayer());
 
+  const coinCounter = createCoinCounter();
+  const winOverlay = createWinOverlay({ onReplay: () => restart() });
+
   // --- Mode management ------------------------------------------------------
   let mode = 'edit';
-  let play = null; // { physics, terrain, player, balls, snapshot } while playing
+  let play = null;
 
   function enterPlay() {
-    const snapshot = level.blocks.slice(); // so coins/edits restore on stop (M6)
+    const snapshot = level.blocks.slice();
     const physics = createPhysicsWorld();
     const terrain = createVoxelBody(physics.world);
-    terrain.rebuild(level);
+    terrain.rebuild(level); // solid colliders + water/coin/goal sensors
+    const spinBodies = createSpinnerBodies(physics.world);
+    spinBodies.build(level);
+    spinners.rebuild(level);
+    spinners.linkBodies(spinBodies.entries);
+    const balls = createDebugBalls(physics.world, scene);
     const player = createPlayer(physics.world, scene, spawnFor(level));
-    const balls = createDebugBalls(physics.world, scene); // B still drops balls, for fun
+
+    const totalCoins = countCoins(level);
+    const rules = createRules({
+      eventQueue: physics.eventQueue,
+      playerColliderHandle: player.colliderHandle,
+      terrain,
+      spinners,
+      hooks: {
+        onRespawn: () => player.respawn(),
+        onCoin: (n) => coinCounter.set(n),
+        onWin: (n) => winOverlay.show(n, totalCoins),
+      },
+    });
+    coinCounter.show(totalCoins);
 
     controls.enabled = false;
     editor.setActive(false);
@@ -109,28 +145,34 @@ async function main() {
     followCam.reset();
     followCam.snapTo(player.position());
 
-    play = { physics, terrain, player, balls, snapshot };
+    play = { physics, terrain, spinBodies, balls, player, rules, snapshot };
     mode = 'play';
     modeButton.setMode('play');
     console.log('[vloxels] PLAY — WASD/arrows move, Space jumps, B drops a ball.');
   }
 
   function exitPlay() {
+    const snapshot = play.snapshot;
     play.balls.clear();
     play.player.dispose();
+    play.spinBodies.clear();
     play.physics.free();
-    level.blocks.set(play.snapshot); // restore edits/coins
-    voxels.rebuild(level);
+    spinners.unlinkBodies();
 
+    level.blocks.set(snapshot); // restore any coins collected during play
+    play = null;
+    mode = 'edit';
+
+    voxels.rebuild(level);
+    spinners.rebuild(level);
+    coinCounter.hide();
+    winOverlay.hide();
     controls.enabled = true;
     controls.target.set(CONFIG.grid.x / 2, 2, CONFIG.grid.z / 2);
     controls.update();
     editor.setActive(true);
     palette.el.style.display = '';
     layerControl.el.style.display = '';
-
-    play = null;
-    mode = 'edit';
     modeButton.setMode('edit');
     console.log('[vloxels] EDIT — build away. Autosaved.');
   }
@@ -139,13 +181,18 @@ async function main() {
     if (mode === 'edit') enterPlay();
     else exitPlay();
   }
+  function restart() {
+    winOverlay.hide();
+    if (mode === 'play') exitPlay();
+    enterPlay();
+  }
 
   const modeButton = createModeButton({ onToggle: toggleMode });
   modeButton.setMode('edit');
 
   // --- Input (keyboard) -----------------------------------------------------
   const keys = new Set();
-  let spaceArmed = true; // require a fresh press to jump (no key-repeat spam)
+  let spaceArmed = true;
 
   window.addEventListener('keydown', (e) => {
     if (e.code === 'Tab') {
@@ -162,7 +209,8 @@ async function main() {
       return;
     }
     if ((e.key === 'b' || e.key === 'B') && mode === 'play') {
-      play.balls.drop(play.player.position().x, play.player.position().y + 4, play.player.position().z);
+      const p = play.player.position();
+      play.balls.drop(p.x, p.y + 4, p.z);
     }
     keys.add(e.code);
   });
@@ -171,7 +219,6 @@ async function main() {
     keys.delete(e.code);
   });
 
-  // Turn the pressed keys into a camera-relative unit move direction.
   function readMoveIntent() {
     let f = 0;
     let r = 0;
@@ -181,9 +228,7 @@ async function main() {
     if (keys.has('KeyA') || keys.has('ArrowLeft')) r -= 1;
     if (f === 0 && r === 0) return { x: 0, z: 0 };
     const { forward, right } = followCam.basis();
-    const dir = new THREE.Vector3()
-      .addScaledVector(forward, f)
-      .addScaledVector(right, r);
+    const dir = new THREE.Vector3().addScaledVector(forward, f).addScaledVector(right, r);
     dir.y = 0;
     dir.normalize();
     return { x: dir.x, z: dir.z };
@@ -200,13 +245,19 @@ async function main() {
     if (mode === 'play') {
       const intent = readMoveIntent();
       play.player.setIntent(intent.x, intent.z);
-      const stepMs = play.physics.step(dt, (fixedDt) => play.player.fixedUpdate(fixedDt));
+      const stepMs = play.physics.step(dt, (fixedDt) => {
+        play.player.fixedUpdate(fixedDt);
+        play.spinBodies.update(fixedDt);
+      });
       play.player.syncMesh();
       play.balls.sync();
+      spinners.update(dt);
+      play.rules.drain();
       followCam.update(dt, play.player.position());
       fpsCounter.setStepMs(stepMs);
     } else {
       controls.update();
+      spinners.update(dt); // cosmetic spin while editing
       fpsCounter.setStepMs(0);
     }
 
@@ -216,7 +267,7 @@ async function main() {
   }
   requestAnimationFrame(frame);
 
-  console.log('[vloxels] Milestone 5 running — press ▶ Play (or Tab) to play your level.');
+  console.log('[vloxels] Milestone 6 running — coins, blades, platforms, goal.');
 }
 
 main().catch((err) => {

@@ -45,6 +45,14 @@ Play:
 - **B** (in play) — drop a physics debug ball near the player, for fun.
 - Fall off the level and you respawn at the **start** block.
 
+Blocks in play:
+- **Coin** — spins & bobs; touch it to collect (see the 🪙 tally up top).
+- **Blades** — crossed bars spinning fast; they physically knock you flying.
+- **Platform** — a slow spinning platform that carries you around as you stand
+  on it.
+- **Water** — fall in and you respawn.
+- **Goal** — reach it to win (with your coin tally + a Replay button).
+
 Your level autosaves to the browser and reloads next time. Touch controls and
 export/import arrive in Milestone 7.
 

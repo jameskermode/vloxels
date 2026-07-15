@@ -30,11 +30,13 @@ export function createVoxelRenderer(scene) {
   function rebuild(level) {
     disposeAll();
 
-    // First pass: how many instances does each block type need?
+    // First pass: how many instances does each block type need? Spinner blocks
+    // (coins, blades, platforms) are drawn by render/spinners.js instead, so we
+    // skip them here.
     const counts = new Map();
     level.forEachBlock((x, y, z, id) => {
       const def = blockById(id);
-      if (!def) return;
+      if (!def || def.spinner) return;
       counts.set(def.key, (counts.get(def.key) || 0) + 1);
     });
 
@@ -52,7 +54,8 @@ export function createVoxelRenderer(scene) {
     // Second pass: place each block as an instance at its cell centre.
     level.forEachBlock((x, y, z, id) => {
       const def = blockById(id);
-      const pool = def && pools.get(def.key);
+      if (!def || def.spinner) return;
+      const pool = pools.get(def.key);
       if (!pool) return;
       dummy.position.set(x + 0.5, y + 0.5, z + 0.5);
       dummy.rotation.set(0, 0, 0);
