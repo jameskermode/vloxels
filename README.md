@@ -79,8 +79,11 @@ Levels are versioned JSON — a flat grid of block ids stored as base64:
 
 ```json
 { "format": "vloxels-level", "version": 1, "name": "Coin Run",
-  "size": [32, 8, 32], "blocks": "<base64 Uint8Array>" }
+  "size": [64, 16, 64], "blocks": "<base64 Uint8Array>" }
 ```
+
+Levels store their own size, so any size loads (smaller levels resize the world
+to fit). The default world size is set in [`src/config.js`](src/config.js).
 
 They persist to `localStorage` and export/import as files, so they travel
 between the MacBook, Pi and tablets. Bundled examples live in
