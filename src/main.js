@@ -306,10 +306,13 @@ async function main() {
   // --- Loop -----------------------------------------------------------------
   const fpsCounter = createFpsCounter();
   let last = performance.now();
+  let elapsed = 0;
 
   function frame(now) {
     const dt = Math.min((now - last) / 1000, CONFIG.maxFrameDt);
     last = now;
+    elapsed += dt;
+    voxels.updateWater(elapsed); // flowing-water ripple, alive in both modes
 
     if (mode === 'play') {
       const intent = readMoveIntent();
