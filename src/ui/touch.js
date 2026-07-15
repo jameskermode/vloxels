@@ -61,10 +61,18 @@ export function createTouchControls({ onJump }) {
     zIndex: '15',
     touchAction: 'none',
   });
+  let jumpDown = false; // jump button held (continuous swim-up in water)
   jumpBtn.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
-    if (enabled) onJump();
+    if (enabled) {
+      jumpDown = true;
+      onJump();
+    }
   });
+  const releaseJump = () => (jumpDown = false);
+  jumpBtn.addEventListener('pointerup', releaseJump);
+  jumpBtn.addEventListener('pointercancel', releaseJump);
+  jumpBtn.addEventListener('pointerleave', releaseJump);
 
   document.body.append(base, knob, jumpBtn);
 
@@ -131,8 +139,10 @@ export function createTouchControls({ onJump }) {
   return {
     // Current move direction, or {x:0,y:0} when idle. y is "forward".
     getVector: () => vector,
+    isJumpHeld: () => jumpDown,
     setEnabled(on) {
       enabled = on;
+      if (!on) jumpDown = false;
       showUI(on);
     },
   };

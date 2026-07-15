@@ -48,6 +48,7 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false) {
   const intent = { x: 0, z: 0 }; // desired horizontal move direction (unit-ish)
   let jumpBuffer = 0; // seconds a recent jump press stays "armed"
   let coyote = 0; // seconds of grounded-grace remaining
+  let swimHeld = false; // jump button currently held (continuous swim up)
   const down = new THREE.Vector3(0, -1, 0);
   const groundReach = P.halfHeight + P.radius + 0.12; // centre-to-just-below-feet
 
@@ -88,6 +89,11 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false) {
     jumpBuffer = P.jumpBuffer;
   }
 
+  // Called each frame by main: is the jump button currently held? (swim up)
+  function setSwimming(held) {
+    swimHeld = held;
+  }
+
   // Is the given world point inside a water cell?
   function wetAt(x, y, z) {
     return isWaterCell(Math.floor(x), Math.floor(y), Math.floor(z));
@@ -125,14 +131,19 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false) {
     if (inWater) control = P.waterControl;
 
     let ny = v.y;
-    if (jumpBuffer > 0 && (coyote > 0 || inWater)) {
-      // Jump on land; swim upward (gentler) in water.
-      ny = inWater ? P.swimSpeed : P.jumpSpeed;
+    if (inWater) {
+      // Swim UP continuously while the jump button is held (or freshly tapped),
+      // so you can rise and climb out onto a ledge; otherwise sink gently.
+      if (swimHeld || jumpBuffer > 0) {
+        ny = P.swimSpeed;
+        jumpBuffer = 0;
+      } else if (deep) {
+        ny = lerp(v.y, P.waterSink, 0.15); // water drag: gentle sink, not a plummet
+      }
+    } else if (jumpBuffer > 0 && coyote > 0) {
+      ny = P.jumpSpeed; // ordinary jump on land
       jumpBuffer = 0;
       coyote = 0;
-    } else if (deep) {
-      // Sink gently through deep water (water drag), instead of plummeting.
-      ny = lerp(v.y, P.waterSink, 0.15);
     }
 
     body.setLinvel({ x: lerp(v.x, targetX, control), y: ny, z: lerp(v.z, targetZ, control) }, true);
@@ -188,6 +199,7 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false) {
     colliderHandle: collider.handle,
     setIntent,
     requestJump,
+    setSwimming,
     fixedUpdate,
     respawn,
     syncMesh,

@@ -278,6 +278,7 @@ async function main() {
   // --- Input (keyboard) -----------------------------------------------------
   const keys = new Set();
   let spaceArmed = true;
+  let jumpHeld = false; // Space held down (for continuous swim-up in water)
 
   window.addEventListener('keydown', (e) => {
     if (e.code === 'Tab') {
@@ -287,6 +288,7 @@ async function main() {
     }
     if (e.code === 'Space') {
       e.preventDefault();
+      jumpHeld = true;
       if (mode === 'play' && spaceArmed) {
         play.player.requestJump();
         spaceArmed = false;
@@ -303,7 +305,10 @@ async function main() {
     keys.add(e.code);
   });
   window.addEventListener('keyup', (e) => {
-    if (e.code === 'Space') spaceArmed = true;
+    if (e.code === 'Space') {
+      spaceArmed = true;
+      jumpHeld = false;
+    }
     keys.delete(e.code);
   });
 
@@ -340,6 +345,7 @@ async function main() {
     if (mode === 'play') {
       const intent = readMoveIntent();
       play.player.setIntent(intent.x, intent.z);
+      play.player.setSwimming(jumpHeld || touch.isJumpHeld());
       const stepMs = play.physics.step(dt, (fixedDt) => {
         play.player.fixedUpdate(fixedDt);
         play.spinBodies.update(fixedDt);
