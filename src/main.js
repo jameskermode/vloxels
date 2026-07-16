@@ -37,6 +37,19 @@ import { createFollowCamera } from './play/camera.js';
 import { createRules } from './play/rules.js';
 import { sfx } from './sfx.js';
 
+// When a new version's service worker takes over (autoUpdate), reload once so
+// PWA/browser users always get the latest without a manual hard-refresh. Only
+// arms on return visits (a controller already exists), so first installs don't
+// double-load.
+if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+  let reloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (reloading) return;
+    reloading = true;
+    window.location.reload();
+  });
+}
+
 function buildStarterLevel() {
   const level = new Level(CONFIG.grid.x, CONFIG.grid.y, CONFIG.grid.z, 'My Level');
   const S = BLOCKS;
