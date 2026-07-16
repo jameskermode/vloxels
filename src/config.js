@@ -32,10 +32,12 @@ export const CONFIG = {
   // shows the finished flow instantly). Smaller = faster flood.
   water: { reach: 6, tickSeconds: 0.1 },
 
-  // Level sharing backend (optional). Leave `url` empty to hide the Share /
-  // Load Code buttons and run with no server. Fill these in after deploying
-  // worker/ (see worker/README.md). `key` must match the Worker's SHARE_KEY.
-  share: { url: '', key: '' },
+  // Level sharing backend (optional). Just the Worker URL — NOT secret, so it's
+  // safe in a public repo. The friends-only passphrase is never stored here;
+  // each player types it once and it lives only in their browser (see share.js).
+  // Leave `url` empty to hide the Share / Load Code buttons and run with no
+  // server. Deploy the backend via worker/README.md.
+  share: { url: 'https://vloxels-levels.james-kermode.workers.dev' },
 
   // --- Physics --------------------------------------------------------------
   gravity: -20, // snappier than -9.81 for a platformer. Try -3 for the moon!

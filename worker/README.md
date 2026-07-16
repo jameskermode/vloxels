@@ -33,17 +33,7 @@ Copy that `id` and paste it into `wrangler.toml`, replacing `PASTE_KV_NAMESPACE_
 _(Dashboard alternative: **Workers & Pages → KV → Create a namespace**, name it
 `VLOXELS_LEVELS`, then copy its ID into `wrangler.toml`.)_
 
-### 3. Set the shared secret
-
-Pick a passphrase your group will use (any string). It must match the one you
-put in the game's `src/config.js` (`share.key`).
-
-```bash
-npx wrangler secret put SHARE_KEY
-# paste the passphrase when prompted
-```
-
-### 4. Deploy
+### 3. Deploy (creates the Worker)
 
 ```bash
 npx wrangler deploy
@@ -51,6 +41,22 @@ npx wrangler deploy
 
 It prints your Worker URL, e.g. `https://vloxels-levels.<you>.workers.dev`.
 Put that URL in the game's `src/config.js` (`share.url`).
+
+(Deploy MUST come before setting the secret — `wrangler secret put` fails with
+"no Worker called vloxels-levels" if the Worker doesn't exist yet. Until the
+secret is set, the Worker deploys fine but rejects every request with 401.)
+
+### 4. Set the shared passphrase
+
+Pick a passphrase your group will use (any string). This is what each player
+types into the game the first time they Share/Load — it is NOT stored in the
+repo or the built site (it lives only in each player's browser). The secret
+applies as soon as you set it — no redeploy needed.
+
+```bash
+npx wrangler secret put SHARE_KEY
+# paste the passphrase when prompted
+```
 
 ## Smoke test
 

@@ -29,7 +29,7 @@ import {
 } from './ui/hud.js';
 import { createTouchControls } from './ui/touch.js';
 import { load, save, createAutosaver, exportLevel, readLevelFile } from './storage.js';
-import { shareEnabled, shareLevel, loadShared } from './share.js';
+import { shareEnabled, shareLevel, loadShared, getShareKey, setShareKey, clearShareKey } from './share.js';
 import { createPhysicsWorld } from './physics/world.js';
 import { createVoxelBody } from './physics/voxelBody.js';
 import { createSpinnerBodies } from './physics/spinnerBodies.js';
@@ -166,6 +166,26 @@ async function main() {
     examples = [];
   }
 
+  // Sharing needs the group passphrase. Ask once; it's remembered on this
+  // device (localStorage) and never stored in the code. Returns false if the
+  // player cancels the prompt.
+  function ensureShareKey() {
+    if (getShareKey()) return true;
+    const key = prompt("Enter your group's Vloxels passphrase:");
+    if (!key) return false;
+    setShareKey(key.trim());
+    return true;
+  }
+  // A wrong passphrase (401) clears the stored one so the next try re-prompts.
+  function onShareError(e, prefix) {
+    if (e.badKey) {
+      clearShareKey();
+      alert("That passphrase didn't work — try again.");
+    } else {
+      alert(`${prefix}: ${e.message}`);
+    }
+  }
+
   const toolbar = createLevelToolbar({
     onNew: () => {
       if (mode !== 'edit') return;
@@ -186,11 +206,11 @@ async function main() {
         .catch(() => alert('Could not load that example.')),
     onShare: shareEnabled()
       ? async () => {
+          if (!ensureShareKey()) return;
           try {
-            const code = await shareLevel(level);
-            showCodeDialog(code);
+            showCodeDialog(await shareLevel(level));
           } catch (e) {
-            alert(`Share failed: ${e.message}`);
+            onShareError(e, 'Share failed');
           }
         }
       : null,
@@ -198,10 +218,11 @@ async function main() {
       ? async () => {
           const code = prompt('Enter a level code:');
           if (!code) return;
+          if (!ensureShareKey()) return;
           try {
             replaceLevel(await loadShared(code));
           } catch (e) {
-            alert(e.message);
+            onShareError(e, 'Load failed');
           }
         }
       : null,
