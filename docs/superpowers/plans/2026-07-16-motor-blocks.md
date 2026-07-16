@@ -381,11 +381,11 @@ Create `test/motorbodies.test.mjs`:
 
 ```js
 import RAPIER from '@dimforge/rapier3d-compat';
-import { Level } from './src/level.js';
-import { BLOCKS as B } from './src/blocks.js';
-import { computeAssemblies } from './src/assemblies.js';
-import { createPhysicsWorld } from './src/physics/world.js';
-import { createMotorBodies } from './src/physics/motorBodies.js';
+import { Level } from '../src/level.js';
+import { BLOCKS as B } from '../src/blocks.js';
+import { computeAssemblies } from '../src/assemblies.js';
+import { createPhysicsWorld } from '../src/physics/world.js';
+import { createMotorBodies } from '../src/physics/motorBodies.js';
 
 let pass = 0, fail = 0;
 const ok = (c, m) => (c ? pass++ : (fail++, console.error('FAIL:', m)));
@@ -421,7 +421,7 @@ console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
 ```
 
-(Note: this test imports from `./src/...` — it must be RUN FROM THE REPO ROOT so `node_modules` resolves. Place the file at repo root as `test/motorbodies.test.mjs` but run it from root, OR keep it at root. To keep resolution simple, create it at repo ROOT named `motorbodies.test.mjs`? No — keep it in `test/` and run `node test/motorbodies.test.mjs` from the repo root; the `./src/...` relative imports resolve against the file, and `@dimforge/...`/`three` resolve against the nearest `node_modules` which is the repo root. This works because Node resolves package imports by walking up from the file's dir to the repo root.)
+(Note: the file lives at `test/motorbodies.test.mjs`, so its `src/` imports use `../src/...`. Run it from the repo root — `node test/motorbodies.test.mjs`; the `@dimforge/...` and `three` package imports resolve against the repo-root `node_modules` via Node's normal walk-up.)
 
 - [ ] **Step 2: Run test to verify it fails**
 
@@ -517,10 +517,10 @@ Create `test/voxelbody-exclude.test.mjs`:
 
 ```js
 import RAPIER from '@dimforge/rapier3d-compat';
-import { Level } from './src/level.js';
-import { BLOCKS as B } from './src/blocks.js';
-import { createPhysicsWorld } from './src/physics/world.js';
-import { createVoxelBody } from './src/physics/voxelBody.js';
+import { Level } from '../src/level.js';
+import { BLOCKS as B } from '../src/blocks.js';
+import { createPhysicsWorld } from '../src/physics/world.js';
+import { createVoxelBody } from '../src/physics/voxelBody.js';
 
 let pass = 0, fail = 0;
 const ok = (c, m) => (c ? pass++ : (fail++, console.error('FAIL:', m)));
@@ -607,10 +607,10 @@ Create `test/assembly-render.test.mjs`:
 
 ```js
 import * as THREE from 'three';
-import { Level } from './src/level.js';
-import { BLOCKS as B } from './src/blocks.js';
-import { computeAssemblies } from './src/assemblies.js';
-import { createAssemblyRenderer } from './src/render/assemblies.js';
+import { Level } from '../src/level.js';
+import { BLOCKS as B } from '../src/blocks.js';
+import { computeAssemblies } from '../src/assemblies.js';
+import { createAssemblyRenderer } from '../src/render/assemblies.js';
 
 let pass = 0, fail = 0;
 const ok = (c, m) => (c ? pass++ : (fail++, console.error('FAIL:', m)));
@@ -743,13 +743,13 @@ Create `test/integration-motors.test.mjs`:
 ```js
 import RAPIER from '@dimforge/rapier3d-compat';
 import * as THREE from 'three';
-import { Level } from './src/level.js';
-import { BLOCKS as B } from './src/blocks.js';
-import { computeAssemblies } from './src/assemblies.js';
-import { createPhysicsWorld } from './src/physics/world.js';
-import { createVoxelBody } from './src/physics/voxelBody.js';
-import { createMotorBodies } from './src/physics/motorBodies.js';
-import { createAssemblyRenderer } from './src/render/assemblies.js';
+import { Level } from '../src/level.js';
+import { BLOCKS as B } from '../src/blocks.js';
+import { computeAssemblies } from '../src/assemblies.js';
+import { createPhysicsWorld } from '../src/physics/world.js';
+import { createVoxelBody } from '../src/physics/voxelBody.js';
+import { createMotorBodies } from '../src/physics/motorBodies.js';
+import { createAssemblyRenderer } from '../src/render/assemblies.js';
 
 let pass = 0, fail = 0;
 const ok = (c, m) => (c ? pass++ : (fail++, console.error('FAIL:', m)));
