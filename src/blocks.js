@@ -9,7 +9,9 @@
 //   collect  — a coin: pick it up, +1 (sensor)
 //   wins     — the goal: reach it to win (sensor)
 //   unique   — only one may exist (start, goal): placing a new one moves it
-//   spinner  — this block is drawn/animated as a spinner: 'coin'|'blades'|'platform'
+//   spinner  — this block is drawn/animated as a cosmetic spinner: 'coin'
+//   motor    — a rotor block: 'slow'|'fast' (arms attached to it spin as one)
+//   arm      — attaches to a motor to build a custom spinner (blade/board)
 
 export const BLOCKS = {
   solid: { id: 1, color: 0x7ec850, solid: true },

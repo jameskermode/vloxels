@@ -44,14 +44,12 @@ export const CONFIG = {
   fixedStep: 1 / 60, // physics ticks at a rock-steady 60 Hz
   maxFrameDt: 0.05, // clamp real frame time so a lag spike can't explode physics
 
-  // --- Spinners (the signature feature) ------------------------------------
+  // --- Coins + motor assemblies --------------------------------------------
   spin: {
     coinSpeed: 2.0, // radians/sec the coin turns about y
     coinBob: 0.12, // how far the coin bobs up/down (world units)
     coinBobSpeed: 2.5, // how fast it bobs
-    bladeSpeed: 4.0, // radians/sec for the spinning blades (fast = scary)
-    platformSpeed: 0.6, // radians/sec for carry-platforms (slow = ridable)
-    platformFriction: 1.0, // high friction so the player is carried around
+    platformFriction: 1.0, // motor-arm friction so the player is carried around
   },
 
   // Motor blocks: how fast the two motor types spin (radians/sec).

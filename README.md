@@ -95,8 +95,7 @@ They persist to `localStorage`, and travel between the MacBook, Pi and tablets
 via **Share codes** (see Controls). Bundled examples live in
 [`public/levels/`](public/levels/): **Coin Run**, **Spin Bridge**,
 **Blade Gauntlet**, and **Waterfall** (regenerate them with
-`node scripts/gen-levels.mjs`). Water in every example is walled in so it
-stays contained.
+`node scripts/gen-levels.mjs`).
 
 ## Performance
 
