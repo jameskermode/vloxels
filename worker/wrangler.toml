@@ -1,0 +1,8 @@
+name = "vloxels-levels"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+
+# KV binding — the `id` comes from `wrangler kv namespace create` (see README).
+[[kv_namespaces]]
+binding = "VLOXELS_LEVELS"
+id = "PASTE_KV_NAMESPACE_ID_HERE"
