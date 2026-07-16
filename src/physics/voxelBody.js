@@ -32,22 +32,25 @@ export function createVoxelBody(world) {
   }
 
   // (Re)build the terrain body from the current level. Returns collider count.
-  function rebuild(level) {
+  function rebuild(level, movingCells) {
     remove();
     body = world.createRigidBody(RAPIER.RigidBodyDesc.fixed());
     colliderCount = 0;
+
+    const solidAt = (x, y, z) =>
+      level.isSolid(x, y, z) && !(movingCells && movingCells.has(`${x},${y},${z}`));
 
     for (let z = 0; z < level.sizeZ; z++) {
       for (let y = 0; y < level.sizeY; y++) {
         let x = 0;
         while (x < level.sizeX) {
-          if (!level.isSolid(x, y, z)) {
+          if (!solidAt(x, y, z)) {
             x++;
             continue;
           }
           // Found the start of a run of solid voxels; extend it along x.
           const runStart = x;
-          while (x < level.sizeX && level.isSolid(x, y, z)) x++;
+          while (x < level.sizeX && solidAt(x, y, z)) x++;
           const length = x - runStart;
 
           // One cuboid covering the whole run. Rapier cuboids take HALF extents.

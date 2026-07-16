@@ -27,7 +27,7 @@ export function createVoxelRenderer(scene) {
   }
 
   // Rebuild all instanced meshes from the current level state.
-  function rebuild(level) {
+  function rebuild(level, movingCells) {
     disposeAll();
 
     // First pass: how many instances does each block type need? Spinner blocks
@@ -36,7 +36,7 @@ export function createVoxelRenderer(scene) {
     const counts = new Map();
     level.forEachBlock((x, y, z, id) => {
       const def = blockById(id);
-      if (!def || def.spinner || def.flow) return;
+      if (!def || def.spinner || def.flow || (movingCells && movingCells.has(`${x},${y},${z}`))) return;
       counts.set(def.key, (counts.get(def.key) || 0) + 1);
     });
 
@@ -58,7 +58,7 @@ export function createVoxelRenderer(scene) {
     // Second pass: place each block as an instance at its cell centre.
     level.forEachBlock((x, y, z, id) => {
       const def = blockById(id);
-      if (!def || def.spinner || def.flow) return;
+      if (!def || def.spinner || def.flow || (movingCells && movingCells.has(`${x},${y},${z}`))) return;
       const pool = pools.get(def.key);
       if (!pool) return;
       dummy.position.set(x + 0.5, y + 0.5, z + 0.5);
