@@ -10,8 +10,10 @@ const LABELS = {
   brick: 'Brick',
   hazard: 'Water',
   coin: 'Coin',
-  spinner: 'Blades',
-  platformSpin: 'Platform',
+  motorSlow: 'Slow Motor',
+  motorFast: 'Fast Motor',
+  blade: 'Blade',
+  board: 'Board',
   start: 'Start',
   goal: 'Goal',
 };

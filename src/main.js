@@ -32,7 +32,10 @@ import { load, save, createAutosaver } from './storage.js';
 import { shareEnabled, shareLevel, loadShared, getShareKey, setShareKey, clearShareKey } from './share.js';
 import { createPhysicsWorld } from './physics/world.js';
 import { createVoxelBody } from './physics/voxelBody.js';
-import { createSpinnerBodies } from './physics/spinnerBodies.js';
+import { createMotorBodies } from './physics/motorBodies.js';
+import { computeAssemblies } from './assemblies.js';
+import { createAssemblyRenderer } from './render/assemblies.js';
+import { migrateLegacyBlocks } from './migrate.js';
 import { createDebugBalls } from './debugBalls.js';
 import { createPlayer } from './play/player.js';
 import { createFollowCamera } from './play/camera.js';
@@ -98,9 +101,10 @@ async function main() {
 
   const followCam = createFollowCamera(camera);
 
-  const level = load() || buildStarterLevel();
+  const level = migrateLegacyBlocks(load() || buildStarterLevel());
   const voxels = createVoxelRenderer(scene);
   const spinners = createSpinners(scene);
+  const assemblies = createAssemblyRenderer(scene);
   const water = createWater(scene);
   // EDIT mode shows the water's initial state — just the source blocks. It
   // flows (animated) only in PLAY.
@@ -120,7 +124,7 @@ async function main() {
     getSelectedId: palette.getSelectedId,
     onChange: (lvl) => {
       autosave(lvl);
-      spinners.rebuild(lvl); // keep coin/blade/platform meshes in sync with edits
+      spinners.rebuild(lvl); // keep coin meshes in sync with edits
       refreshWater(); // re-flow water as terrain/sources change
     },
   });
@@ -145,6 +149,7 @@ async function main() {
       alert('That file is not a Vloxels level.');
       return;
     }
+    migrateLegacyBlocks(incoming);
     // Adopt the incoming level's size (levels can be any size). We mutate the
     // existing `level` object in place so the editor/renderers keep their ref.
     level.sizeX = incoming.sizeX;
@@ -233,8 +238,14 @@ async function main() {
   function enterPlay() {
     const snapshot = level.blocks.slice();
     const physics = createPhysicsWorld();
+    const { assemblies: asmList, movingCells } = computeAssemblies(level);
+    const motorBodies = createMotorBodies(physics.world);
+    motorBodies.build(asmList);
+    assemblies.build(level, asmList, motorBodies.entries);
     const terrain = createVoxelBody(physics.world);
-    terrain.rebuild(level); // solid + coin/goal sensors
+    terrain.rebuild(level, movingCells); // solid + coin/goal sensors; assembly cells excluded
+    voxels.rebuild(level, movingCells); // hide the cells that are now spinning
+    spinners.rebuild(level); // coins only now
     // Ticked water: starts at the sources and spreads/pours ring by ring. The
     // wetSet tracks which cells are currently water so the player can wade/sink.
     const waterSim = createWaterSim();
@@ -242,10 +253,6 @@ async function main() {
     const wetSet = new Set(wet.map((c) => c.join(',')));
     water.rebuild(wet);
     let waterAcc = 0;
-    const spinBodies = createSpinnerBodies(physics.world);
-    spinBodies.build(level);
-    spinners.rebuild(level);
-    spinners.linkBodies(spinBodies.entries);
     const balls = createDebugBalls(physics.world, scene);
     const player = createPlayer(physics.world, scene, spawnFor(level), (x, y, z) =>
       wetSet.has(`${x},${y},${z}`),
@@ -283,7 +290,7 @@ async function main() {
     followCam.reset();
     followCam.snapTo(player.position());
 
-    play = { physics, terrain, spinBodies, balls, player, rules, snapshot, waterSim, wet, wetSet, waterAcc };
+    play = { physics, terrain, motorBodies, balls, player, rules, snapshot, waterSim, wet, wetSet, waterAcc };
     mode = 'play';
     modeButton.setMode('play');
     console.log('[vloxels] PLAY — WASD/arrows move, Space jumps, B drops a ball.');
@@ -293,9 +300,9 @@ async function main() {
     const snapshot = play.snapshot;
     play.balls.clear();
     play.player.dispose();
-    play.spinBodies.clear();
+    play.motorBodies.clear();
+    assemblies.clear();
     play.physics.free();
-    spinners.unlinkBodies();
 
     level.blocks.set(snapshot); // restore any coins collected during play
     play = null;
@@ -404,11 +411,12 @@ async function main() {
       play.player.setSwimming(jumpHeld || touch.isJumpHeld());
       const stepMs = play.physics.step(dt, (fixedDt) => {
         play.player.fixedUpdate(fixedDt);
-        play.spinBodies.update(fixedDt);
+        play.motorBodies.update(fixedDt);
       });
       play.player.syncMesh();
       play.balls.sync();
       spinners.update(dt);
+      assemblies.update();
 
       // Advance the ticked water flood: spread a ring every tickSeconds, growing
       // the rendered water + the wetSet the player samples for wade/sink.

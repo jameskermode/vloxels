@@ -20,8 +20,6 @@ export const BLOCKS = {
   motorFast: { id: 10, color: 0x8e44ad, solid: true, motor: 'fast' },
   blade: { id: 11, color: 0xe74c3c, solid: true, arm: true },
   board: { id: 12, color: 0xc19a6b, solid: true, arm: true },
-  spinner: { id: 5, color: 0xc040e0, solid: false, kills: false, spinner: 'blades' },
-  platformSpin: { id: 6, color: 0xf07d20, solid: false, spinner: 'platform' }, // orange, distinct from water
   start: { id: 7, color: 0xffffff, solid: false, unique: true },
   goal: { id: 8, color: 0x40e0a0, solid: false, wins: true },
 };
