@@ -32,6 +32,11 @@ export const CONFIG = {
   // shows the finished flow instantly). Smaller = faster flood.
   water: { reach: 6, tickSeconds: 0.1 },
 
+  // Level sharing backend (optional). Leave `url` empty to hide the Share /
+  // Load Code buttons and run with no server. Fill these in after deploying
+  // worker/ (see worker/README.md). `key` must match the Worker's SHARE_KEY.
+  share: { url: '', key: '' },
+
   // --- Physics --------------------------------------------------------------
   gravity: -20, // snappier than -9.81 for a platformer. Try -3 for the moon!
   fixedStep: 1 / 60, // physics ticks at a rock-steady 60 Hz
