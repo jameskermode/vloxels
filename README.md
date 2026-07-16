@@ -52,6 +52,12 @@ playable from the Pages URL on any tablet, no install.
   mid-air).
 - Bottom-left toolbar: **New**, **Export** (download `.json`), **Import**, and
   an **Examples** picker. Your level also autosaves to the browser.
+- **Share** / **Load Code** (when a sharing backend is configured) — Share
+  uploads your level and gives you a short code like `brave-fox-42` to send a
+  friend; Load Code fetches a level by its code. Set up the backend once via
+  [`worker/README.md`](worker/README.md), then fill in `share` in
+  [`src/config.js`](src/config.js). Without it, levels still travel via
+  Export/Import files.
 
 **Play mode**
 - **WASD / arrow keys**, or the **touch joystick** (left half) — move
