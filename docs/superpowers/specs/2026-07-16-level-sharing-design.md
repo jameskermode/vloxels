@@ -167,4 +167,21 @@ click-by-click guide covering:
   level format (versioned) so it stays backward-compatible.
 - **"My codes"**: keep a small local list of codes this device has created so a
   kid can re-copy them.
+- **Update an existing share** (fast-follow — deferred 2026-07-16, low priority
+  until stale codes actually bite): re-share an edited level under the *same*
+  code so friends who re-load it get the latest, instead of every Share minting
+  a new code and old codes going stale. Minimal design that avoids a schema
+  change and edit-tokens:
+  - Worker: `POST /levels` accepts an optional `code` in the body; if present
+    and it already exists, overwrite that entry instead of generating a new
+    code (~5 lines). Reuse the existing passphrase gate.
+  - Client: build on the "My codes" list above; when the player taps Share and
+    has prior codes, offer "New code" vs pick one of theirs to update; on
+    update, POST with that `code`.
+  - Ownership: NONE — anyone with the group passphrase can overwrite any code.
+    Acceptable under the friend-group trust model (same trust the shared
+    passphrase already assumes); would need per-code edit tokens for a wider
+    audience. Avoids needing a stable per-level id by making the kid pick which
+    code to update rather than auto-detecting level identity.
+  - Est. ~30–45 min via the subagent pipeline; no level-format change.
 - Optional per-IP write rate limiting; optional level TTL / cleanup.
