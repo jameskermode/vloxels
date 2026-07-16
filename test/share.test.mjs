@@ -37,5 +37,12 @@ let threw = '';
 try { await loadShared('missing'); } catch (e) { threw = e.message; }
 ok(/code/i.test(threw), `missing code rejects with a friendly message (${threw})`);
 
+// Network/offline failure: fetch() itself rejects.
+globalThis.fetch = async () => { throw new TypeError('Failed to fetch'); };
+let m1 = ''; try { await shareLevel(fakeLevel); } catch (e) { m1 = e.message; }
+ok(/reach/i.test(m1), `share network failure is friendly (${m1})`);
+let m2 = ''; try { await loadShared('brave-fox-42'); } catch (e) { m2 = e.message; }
+ok(/reach/i.test(m2), `load network failure is friendly (${m2})`);
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

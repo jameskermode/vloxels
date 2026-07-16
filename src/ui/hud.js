@@ -217,7 +217,7 @@ export function showCodeDialog(code) {
 }
 
 // Edit-mode toolbar: New, Export, Import, and an Examples picker. Callbacks:
-//   onNew(), onExport(), onImport(File), onLoadExample(file)
+//   onNew(), onExport(), onImport(File), onLoadExample(file), onShare(), onLoadCode()
 export function createLevelToolbar({ onNew, onExport, onImport, examples, onLoadExample, onShare, onLoadCode }) {
   const bar = document.createElement('div');
   Object.assign(bar.style, {

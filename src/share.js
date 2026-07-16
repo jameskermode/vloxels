@@ -9,11 +9,16 @@ export function shareEnabled() {
 
 // Upload a level, resolve to its share code (e.g. "brave-fox-42").
 export async function shareLevel(level) {
-  const res = await fetch(`${CONFIG.share.url}/levels`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Vloxels-Key': CONFIG.share.key },
-    body: JSON.stringify(level.toJSON()),
-  });
+  let res;
+  try {
+    res = await fetch(`${CONFIG.share.url}/levels`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Vloxels-Key': CONFIG.share.key },
+      body: JSON.stringify(level.toJSON()),
+    });
+  } catch {
+    throw new Error('Could not reach the sharing server. Check your connection.');
+  }
   if (!res.ok) {
     const info = await res.json().catch(() => ({}));
     throw new Error(info.error || `Share failed (${res.status})`);
@@ -23,9 +28,14 @@ export async function shareLevel(level) {
 
 // Fetch a shared level by code, resolve to a vloxels-level object.
 export async function loadShared(code) {
-  const res = await fetch(`${CONFIG.share.url}/levels/${encodeURIComponent(code.trim())}`, {
-    headers: { 'X-Vloxels-Key': CONFIG.share.key },
-  });
+  let res;
+  try {
+    res = await fetch(`${CONFIG.share.url}/levels/${encodeURIComponent(code.trim())}`, {
+      headers: { 'X-Vloxels-Key': CONFIG.share.key },
+    });
+  } catch {
+    throw new Error('Could not reach the sharing server. Check your connection.');
+  }
   if (res.status === 404) throw new Error('No level found for that code.');
   if (!res.ok) throw new Error(`Load failed (${res.status})`);
   return await res.json();
