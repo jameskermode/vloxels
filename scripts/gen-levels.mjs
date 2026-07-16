@@ -21,6 +21,13 @@ const save = (L, file) => {
   console.log(`wrote ${file}: ${n} blocks, size ${L.sizeX}x${L.sizeY}x${L.sizeZ}`);
 };
 const level = (name) => new Level(GX, GY, GZ, name);
+// Place a spinner as a motor hub + a cross of arms (a quick blades/platform).
+const spinner = (L, x, y, z, kind) => {
+  const motor = kind === 'fast' ? B.motorFast.id : B.motorSlow.id;
+  const arm = kind === 'fast' ? B.blade.id : B.board.id;
+  L.set(x, y, z, motor);
+  for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) L.set(x + dx, y, z + dz, arm);
+};
 
 // 1) Coin Run — a long course east-west, wade the shallow water channels.
 {
@@ -39,7 +46,7 @@ const level = (name) => new Level(GX, GY, GZ, name);
   const L = level('Spin Bridge');
   box(L, 6, 58, 0, 0, 24, 40, B.solid.id); // floor slab
   box(L, 12, 52, 1, 1, 28, 36, B.hazard.id); // shallow lake
-  for (let x = 14; x <= 50; x += 4) L.set(x, 2, 32, B.platformSpin.id); // stepping platforms
+  for (let x = 14; x <= 50; x += 4) spinner(L, x, 2, 32, 'slow'); // stepping platforms
   for (const x of [18, 26, 34, 42]) L.set(x, 3, 32, B.coin.id);
   L.set(8, 1, 32, B.start.id); // west pad
   L.set(56, 1, 32, B.goal.id); // east pad
@@ -50,7 +57,7 @@ const level = (name) => new Level(GX, GY, GZ, name);
 {
   const L = level('Blade Gauntlet');
   box(L, 12, 52, 0, 0, 12, 52, B.solid.id); // big plaza
-  for (const x of [22, 32, 42]) for (const z of [22, 32, 42]) L.set(x, 1, z, B.spinner.id); // blades
+  for (const x of [22, 32, 42]) for (const z of [22, 32, 42]) spinner(L, x, 1, z, 'fast'); // blades
   for (const [x, z] of [[27, 22], [37, 32], [27, 42], [22, 27], [42, 37], [32, 27]])
     L.set(x, 2, z, B.coin.id);
   L.set(15, 1, 15, B.start.id);
@@ -77,7 +84,7 @@ const level = (name) => new Level(GX, GY, GZ, name);
   box(L, 21, 23, 10, 10, 31, 33, B.solid.id); // ledge, top y11
   for (const x of [21, 22, 23]) L.set(x, 11, 32, B.coin.id);
   // Down in the pool: a spinning stone + a couple of easy coins.
-  L.set(32, 2, 32, B.platformSpin.id);
+  spinner(L, 32, 2, 32, 'slow');
   L.set(28, 3, 32, B.coin.id);
   L.set(38, 3, 32, B.coin.id);
   L.set(10, 1, 32, B.start.id); // west ground

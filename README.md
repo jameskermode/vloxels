@@ -71,8 +71,8 @@ playable from the Pages URL on any tablet, no install.
 |-------|--------------|
 | **Grass / Brick** | solid terrain you stand on |
 | **Coin** | spins & bobs; touch to collect (🪙 tally up top) |
-| **Blades** | crossed bars spinning fast — physically knock you flying |
-| **Platform** | slow spinning platform that carries you as you stand on it |
+| **Slow / Fast Motor** | spins in place; attach Blade/Board cubes next to it and the whole shape spins as one |
+| **Blade / Board** | attach to a motor to build custom spinners — a flat shape carries you, a spinning bar knocks you flying. Loose ones are just solid blocks |
 | **Water** | a flowing source — spreads down & sideways. Wade shallow water at half speed; deep water you sink into and tread (hold Space to swim up to a shallow edge). Doesn't kill you |
 | **Start** | where the player spawns (only one) |
 | **Goal** | reach it to win, with your coin tally + Replay (only one) |
