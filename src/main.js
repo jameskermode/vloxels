@@ -28,7 +28,7 @@ import {
   showCodeDialog,
 } from './ui/hud.js';
 import { createTouchControls } from './ui/touch.js';
-import { load, save, createAutosaver, exportLevel, readLevelFile } from './storage.js';
+import { load, save, createAutosaver } from './storage.js';
 import { shareEnabled, shareLevel, loadShared, getShareKey, setShareKey, clearShareKey } from './share.js';
 import { createPhysicsWorld } from './physics/world.js';
 import { createVoxelBody } from './physics/voxelBody.js';
@@ -196,8 +196,6 @@ async function main() {
       refreshWater();
       save(level);
     },
-    onExport: () => exportLevel(level),
-    onImport: (file) => readLevelFile(file).then(replaceLevel).catch(() => alert('Could not read that file.')),
     examples,
     onLoadExample: (file) =>
       fetch(`levels/${file}`)

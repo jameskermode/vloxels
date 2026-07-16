@@ -216,9 +216,10 @@ export function showCodeDialog(code) {
   document.body.appendChild(overlay);
 }
 
-// Edit-mode toolbar: New, Export, Import, and an Examples picker. Callbacks:
-//   onNew(), onExport(), onImport(File), onLoadExample(file), onShare(), onLoadCode()
-export function createLevelToolbar({ onNew, onExport, onImport, examples, onLoadExample, onShare, onLoadCode }) {
+// Edit-mode toolbar: New, an Examples picker, and (when a sharing backend is
+// configured) Share / Load Code. Callbacks:
+//   onNew(), onLoadExample(file), onShare(), onLoadCode()
+export function createLevelToolbar({ onNew, examples, onLoadExample, onShare, onLoadCode }) {
   const bar = document.createElement('div');
   Object.assign(bar.style, {
     position: 'fixed',
@@ -252,19 +253,6 @@ export function createLevelToolbar({ onNew, onExport, onImport, examples, onLoad
   };
 
   bar.appendChild(mkBtn('New', onNew));
-  bar.appendChild(mkBtn('Export', onExport));
-
-  // Import via a hidden file input.
-  const fileInput = document.createElement('input');
-  fileInput.type = 'file';
-  fileInput.accept = 'application/json,.json';
-  fileInput.style.display = 'none';
-  fileInput.addEventListener('change', () => {
-    if (fileInput.files[0]) onImport(fileInput.files[0]);
-    fileInput.value = '';
-  });
-  bar.appendChild(mkBtn('Import', () => fileInput.click()));
-  bar.appendChild(fileInput);
 
   if (onShare) bar.appendChild(mkBtn('Share', onShare));
   if (onLoadCode) bar.appendChild(mkBtn('Load Code', onLoadCode));

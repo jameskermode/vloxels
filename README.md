@@ -50,14 +50,14 @@ playable from the Pages URL on any tablet, no install.
 - **Drag** — orbit the camera.
 - **`[` / `]`** or on-screen **▲ / ▼** — move the working layer (build in
   mid-air).
-- Bottom-left toolbar: **New**, **Export** (download `.json`), **Import**, and
-  an **Examples** picker. Your level also autosaves to the browser.
+- Bottom-left toolbar: **New** and an **Examples** picker. Your level also
+  autosaves to the browser.
 - **Share** / **Load Code** (when a sharing backend is configured) — Share
   uploads your level and gives you a short code like `brave-fox-42` to send a
-  friend; Load Code fetches a level by its code. Set up the backend once via
-  [`worker/README.md`](worker/README.md), then fill in `share` in
-  [`src/config.js`](src/config.js). Without it, levels still travel via
-  Export/Import files.
+  friend; Load Code fetches a level by its code. This is how levels travel
+  between devices. Set up the backend once via
+  [`worker/README.md`](worker/README.md), then set `share.url` in
+  [`src/config.js`](src/config.js).
 
 **Play mode**
 - **WASD / arrow keys**, or the **touch joystick** (left half) — move
@@ -91,8 +91,8 @@ Levels are versioned JSON — a flat grid of block ids stored as base64:
 Levels store their own size, so any size loads (smaller levels resize the world
 to fit). The default world size is set in [`src/config.js`](src/config.js).
 
-They persist to `localStorage` and export/import as files, so they travel
-between the MacBook, Pi and tablets. Bundled examples live in
+They persist to `localStorage`, and travel between the MacBook, Pi and tablets
+via **Share codes** (see Controls). Bundled examples live in
 [`public/levels/`](public/levels/): **Coin Run**, **Spin Bridge**,
 **Blade Gauntlet**, and **Waterfall** (regenerate them with
 `node scripts/gen-levels.mjs`). Water in every example is walled in so it
