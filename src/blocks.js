@@ -16,6 +16,10 @@ export const BLOCKS = {
   brick: { id: 2, color: 0xb0522d, solid: true },
   hazard: { id: 3, color: 0x3aa0e8, solid: false, opacity: 0.7, flow: true }, // water: wade/sink, never kills
   coin: { id: 4, color: 0xffd24a, solid: false, collect: true, spinner: 'coin' },
+  motorSlow: { id: 9, color: 0x2a9d8f, solid: true, motor: 'slow' },
+  motorFast: { id: 10, color: 0x8e44ad, solid: true, motor: 'fast' },
+  blade: { id: 11, color: 0xe74c3c, solid: true, arm: true },
+  board: { id: 12, color: 0xc19a6b, solid: true, arm: true },
   spinner: { id: 5, color: 0xc040e0, solid: false, kills: false, spinner: 'blades' },
   platformSpin: { id: 6, color: 0xf07d20, solid: false, spinner: 'platform' }, // orange, distinct from water
   start: { id: 7, color: 0xffffff, solid: false, unique: true },
@@ -43,3 +47,7 @@ export function blockById(id) {
 
 // Ordered list of block definitions (stable, for the palette UI).
 export const BLOCK_LIST = Object.values(BLOCKS);
+
+// Retired block ids, kept only so migrateLegacyBlocks() can convert old levels.
+export const LEGACY_BLADES = 5;
+export const LEGACY_PLATFORM = 6;

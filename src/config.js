@@ -54,6 +54,9 @@ export const CONFIG = {
     platformFriction: 1.0, // high friction so the player is carried around
   },
 
+  // Motor blocks: how fast the two motor types spin (radians/sec).
+  motor: { slowSpeed: 0.6, fastSpeed: 4.0 },
+
   // --- Player (used from Milestone 5 on) -----------------------------------
   player: {
     radius: 0.3,
