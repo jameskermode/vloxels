@@ -25,9 +25,11 @@ import {
   createCoinCounter,
   createWinOverlay,
   createLevelToolbar,
+  showCodeDialog,
 } from './ui/hud.js';
 import { createTouchControls } from './ui/touch.js';
 import { load, save, createAutosaver, exportLevel, readLevelFile } from './storage.js';
+import { shareEnabled, shareLevel, loadShared } from './share.js';
 import { createPhysicsWorld } from './physics/world.js';
 import { createVoxelBody } from './physics/voxelBody.js';
 import { createSpinnerBodies } from './physics/spinnerBodies.js';
@@ -182,6 +184,27 @@ async function main() {
         .then((r) => r.json())
         .then(replaceLevel)
         .catch(() => alert('Could not load that example.')),
+    onShare: shareEnabled()
+      ? async () => {
+          try {
+            const code = await shareLevel(level);
+            showCodeDialog(code);
+          } catch (e) {
+            alert(`Share failed: ${e.message}`);
+          }
+        }
+      : null,
+    onLoadCode: shareEnabled()
+      ? async () => {
+          const code = prompt('Enter a level code:');
+          if (!code) return;
+          try {
+            replaceLevel(await loadShared(code));
+          } catch (e) {
+            alert(e.message);
+          }
+        }
+      : null,
   });
 
   // --- Mode management ------------------------------------------------------

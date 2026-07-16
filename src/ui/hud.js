@@ -179,9 +179,46 @@ export function createWinOverlay({ onReplay }) {
   };
 }
 
+// A small overlay showing a share code with a Copy button.
+export function showCodeDialog(code) {
+  const overlay = document.createElement('div');
+  Object.assign(overlay.style, {
+    position: 'fixed', inset: '0', display: 'flex', alignItems: 'center',
+    justifyContent: 'center', flexDirection: 'column', gap: '14px',
+    background: 'rgba(0,0,0,0.6)', color: '#fff', zIndex: '30',
+    font: '700 20px system-ui, sans-serif', textAlign: 'center', padding: '20px',
+  });
+  const label = document.createElement('div');
+  label.textContent = 'Level code — tell your friends!';
+  const codeEl = document.createElement('div');
+  codeEl.textContent = code;
+  codeEl.style.font = '800 34px ui-monospace, monospace';
+  codeEl.style.color = '#ffd24a';
+  const row = document.createElement('div');
+  row.style.display = 'flex';
+  row.style.gap = '10px';
+  const mk = (text, bg, fn) => {
+    const b = document.createElement('button');
+    b.textContent = text;
+    Object.assign(b.style, {
+      minHeight: '48px', padding: '0 18px', border: 'none', borderRadius: '10px',
+      background: bg, color: '#fff', font: '700 16px system-ui, sans-serif', cursor: 'pointer',
+    });
+    b.addEventListener('click', fn);
+    return b;
+  };
+  const copyBtn = mk('Copy', '#2a3550', () => {
+    navigator.clipboard?.writeText(code).then(() => (copyBtn.textContent = 'Copied!'));
+  });
+  const closeBtn = mk('Close', '#27ae60', () => overlay.remove());
+  row.append(copyBtn, closeBtn);
+  overlay.append(label, codeEl, row);
+  document.body.appendChild(overlay);
+}
+
 // Edit-mode toolbar: New, Export, Import, and an Examples picker. Callbacks:
 //   onNew(), onExport(), onImport(File), onLoadExample(file)
-export function createLevelToolbar({ onNew, onExport, onImport, examples, onLoadExample }) {
+export function createLevelToolbar({ onNew, onExport, onImport, examples, onLoadExample, onShare, onLoadCode }) {
   const bar = document.createElement('div');
   Object.assign(bar.style, {
     position: 'fixed',
@@ -228,6 +265,9 @@ export function createLevelToolbar({ onNew, onExport, onImport, examples, onLoad
   });
   bar.appendChild(mkBtn('Import', () => fileInput.click()));
   bar.appendChild(fileInput);
+
+  if (onShare) bar.appendChild(mkBtn('Share', onShare));
+  if (onLoadCode) bar.appendChild(mkBtn('Load Code', onLoadCode));
 
   // Examples dropdown.
   if (examples && examples.length) {
