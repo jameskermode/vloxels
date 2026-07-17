@@ -29,7 +29,15 @@ import {
 } from './ui/hud.js';
 import { createTouchControls } from './ui/touch.js';
 import { load, save, createAutosaver } from './storage.js';
-import { shareEnabled, shareLevel, loadShared, getShareKey, setShareKey, clearShareKey } from './share.js';
+import {
+  shareEnabled,
+  shareLevel,
+  loadShared,
+  getShareKey,
+  setShareKey,
+  clearShareKey,
+  shareCodeFromSearch,
+} from './share.js';
 import { createPhysicsWorld } from './physics/world.js';
 import { createVoxelBody } from './physics/voxelBody.js';
 import { createMotorBodies } from './physics/motorBodies.js';
@@ -230,6 +238,20 @@ async function main() {
         }
       : null,
   });
+
+  // Deep link: opening `?code=brave-fox-42` auto-loads that shared level. We
+  // strip the param first so a later refresh doesn't reload it over your edits.
+  if (shareEnabled()) {
+    const linkCode = shareCodeFromSearch(location.search);
+    if (linkCode) {
+      history.replaceState(null, '', location.pathname + location.hash);
+      if (ensureShareKey()) {
+        loadShared(linkCode)
+          .then(replaceLevel)
+          .catch((e) => onShareError(e, 'Load failed'));
+      }
+    }
+  }
 
   // --- Mode management ------------------------------------------------------
   let mode = 'edit';

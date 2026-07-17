@@ -14,6 +14,16 @@ export function shareEnabled() {
   return !!(CONFIG.share && CONFIG.share.url);
 }
 
+// Read a `?code=...` share code out of a URL query string (e.g. location.search),
+// or null if there isn't one. Pure, so it's unit-testable.
+export function shareCodeFromSearch(search) {
+  try {
+    return new URLSearchParams(search).get('code');
+  } catch {
+    return null;
+  }
+}
+
 export function getShareKey() {
   try {
     return localStorage.getItem(KEY_STORAGE) || '';

@@ -207,11 +207,16 @@ export function showCodeDialog(code) {
     b.addEventListener('click', fn);
     return b;
   };
-  const copyBtn = mk('Copy', '#2a3550', () => {
+  const copyBtn = mk('Copy code', '#2a3550', () => {
     navigator.clipboard?.writeText(code).then(() => (copyBtn.textContent = 'Copied!'));
   });
+  // A one-click link that auto-loads this level when opened.
+  const link = `${location.origin}${location.pathname}?code=${encodeURIComponent(code)}`;
+  const linkBtn = mk('Copy link', '#2a3550', () => {
+    navigator.clipboard?.writeText(link).then(() => (linkBtn.textContent = 'Copied!'));
+  });
   const closeBtn = mk('Close', '#27ae60', () => overlay.remove());
-  row.append(copyBtn, closeBtn);
+  row.append(copyBtn, linkBtn, closeBtn);
   overlay.append(label, codeEl, row);
   document.body.appendChild(overlay);
 }

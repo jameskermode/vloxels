@@ -53,9 +53,10 @@ playable from the Pages URL on any tablet, no install.
 - Bottom-left toolbar: **New** and an **Examples** picker. Your level also
   autosaves to the browser.
 - **Share** / **Load Code** (when a sharing backend is configured) — Share
-  uploads your level and gives you a short code like `brave-fox-42` to send a
-  friend; Load Code fetches a level by its code. This is how levels travel
-  between devices. Set up the backend once via
+  uploads your level and gives you a short code like `brave-fox-42` (with a
+  **Copy link** button — send the link and it opens straight to that level);
+  Load Code fetches a level by its code. Opening a `?code=…` link auto-loads it.
+  This is how levels travel between devices. Set up the backend once via
   [`worker/README.md`](worker/README.md), then set `share.url` in
   [`src/config.js`](src/config.js).
 

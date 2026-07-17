@@ -5,6 +5,7 @@ import {
   loadShared,
   setShareKey,
   getShareKey,
+  shareCodeFromSearch,
 } from '../src/share.js';
 
 let pass = 0, fail = 0;
@@ -72,6 +73,11 @@ ok(/reach/i.test(m1), `share network failure is friendly (${m1})`);
 let m2 = '';
 try { await loadShared('brave-fox-42'); } catch (e) { m2 = e.message; }
 ok(/reach/i.test(m2), `load network failure is friendly (${m2})`);
+
+// shareCodeFromSearch parses the ?code=... deep link.
+ok(shareCodeFromSearch('?code=brave-fox-42') === 'brave-fox-42', 'reads ?code= from a query string');
+ok(shareCodeFromSearch('?foo=1&code=zippy-owl-7') === 'zippy-owl-7', 'reads code among other params');
+ok(shareCodeFromSearch('') === null && shareCodeFromSearch('?x=1') === null, 'null when no code present');
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
