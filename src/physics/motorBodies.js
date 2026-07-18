@@ -10,6 +10,14 @@ function quatY(angle) {
   return { x: 0, y: Math.sin(angle / 2), z: 0, w: Math.cos(angle / 2) };
 }
 
+// Triangle wave: offset goes 0 -> distance -> 0 -> ... as `phase` grows.
+function pingpong(phase, distance) {
+  if (distance <= 0) return 0;
+  const period = 2 * distance;
+  const t = ((phase % period) + period) % period;
+  return t <= distance ? t : period - t;
+}
+
 export function createMotorBodies(world) {
   const entries = []; // { body, angle, speed }
 
@@ -29,8 +37,21 @@ export function createMotorBodies(world) {
           body,
         );
       }
-      const speed = asm.speed === 'fast' ? CONFIG.motor.fastSpeed : CONFIG.motor.slowSpeed;
-      entries.push({ body, angle: 0, speed });
+      if (asm.kind === 'linear') {
+        const speed = asm.speed === 'fast' ? CONFIG.motor.linearFastSpeed : CONFIG.motor.linearSlowSpeed;
+        entries.push({
+          body,
+          kind: 'linear',
+          center: { x: cx + 0.5, y: cy + 0.5, z: cz + 0.5 },
+          axis: asm.axis,
+          distance: asm.distance,
+          speed,
+          phase: 0,
+        });
+      } else {
+        const speed = asm.speed === 'fast' ? CONFIG.motor.fastSpeed : CONFIG.motor.slowSpeed;
+        entries.push({ body, kind: 'rotary', angle: 0, speed });
+      }
     }
     return entries;
   }
@@ -38,8 +59,18 @@ export function createMotorBodies(world) {
   // Advance every motor's rotation. Call once per FIXED physics step.
   function update(dt) {
     for (const e of entries) {
-      e.angle += e.speed * dt;
-      e.body.setNextKinematicRotation(quatY(e.angle));
+      if (e.kind === 'linear') {
+        e.phase += e.speed * dt;
+        const o = pingpong(e.phase, e.distance);
+        e.body.setNextKinematicTranslation({
+          x: e.center.x + e.axis[0] * o,
+          y: e.center.y + e.axis[1] * o,
+          z: e.center.z + e.axis[2] * o,
+        });
+      } else {
+        e.angle += e.speed * dt;
+        e.body.setNextKinematicRotation(quatY(e.angle));
+      }
     }
   }
 
