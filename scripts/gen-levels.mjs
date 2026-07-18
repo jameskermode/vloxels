@@ -92,11 +92,34 @@ const spinner = (L, x, y, z, kind) => {
   save(L, 'waterfall.json');
 }
 
+// 5) Machines — a rotary spinner, an elevator (vertical shaft) and a sliding
+//    platform (horizontal shaft) to show off motors.
+{
+  const L = level('Machines');
+  box(L, 16, 48, 0, 0, 16, 48, B.solid.id); // floor
+  // ELEVATOR (slow lift): board car floor + a tall shaft; ride up to a coin.
+  L.set(26, 1, 30, B.motorLinearSlow.id);
+  for (let y = 2; y <= 8; y++) L.set(26, y, 30, B.shaft.id); // shaft +y, length 7
+  for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) L.set(26 + dx, 1, 30 + dz, B.board.id);
+  L.set(27, 9, 30, B.coin.id); // reward reachable when the car is near the top
+  // SLIDING PLATFORM (fast slider): a +x shaft; carries you and a coin across.
+  L.set(34, 1, 34, B.motorLinearFast.id);
+  for (let x = 35; x <= 41; x++) L.set(x, 1, 34, B.shaft.id); // shaft +x, length 7
+  for (const [dx, dz] of [[0, 1], [0, -1], [-1, 0]]) L.set(34 + dx, 1, 34 + dz, B.board.id);
+  L.set(34, 2, 34, B.coin.id); // rides along on the platform
+  // a rotary spinner for contrast
+  spinner(L, 42, 1, 42, 'fast');
+  L.set(20, 1, 30, B.start.id);
+  L.set(45, 1, 42, B.goal.id);
+  save(L, 'machines.json');
+}
+
 const manifest = [
   { name: 'Coin Run', file: 'coin-run.json' },
   { name: 'Spin Bridge', file: 'spin-bridge.json' },
   { name: 'Blade Gauntlet', file: 'blade-gauntlet.json' },
   { name: 'Waterfall', file: 'waterfall.json' },
+  { name: 'Machines', file: 'machines.json' },
 ];
 writeFileSync('./public/levels/index.json', JSON.stringify(manifest, null, 2));
 console.log('wrote index.json');

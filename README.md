@@ -74,6 +74,8 @@ playable from the Pages URL on any tablet, no install.
 | **Coin** | spins & bobs; touch to collect (🪙 tally up top) |
 | **Slow / Fast Motor** | spins in place; attach Blade/Board cubes next to it and the whole shape spins as one |
 | **Blade / Board** | attach to a motor to build custom spinners — a flat shape carries you, a spinning bar knocks you flying. Loose ones are just solid blocks |
+| **Slow / Fast Slider** | a linear motor: draw a straight **Shaft** line for the track (up = elevator, sideways = sliding platform) and attach Board/Blade cubes; the car slides along the shaft and back, carrying you |
+| **Shaft** | the fixed rail a slider's car travels along; its length sets how far it goes |
 | **Water** | a flowing source — spreads down & sideways. Wade shallow water at half speed; deep water you sink into and tread (hold Space to swim up to a shallow edge). Doesn't kill you |
 | **Start** | where the player spawns (only one) |
 | **Goal** | reach it to win, with your coin tally + Replay (only one) |

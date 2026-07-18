@@ -14,5 +14,9 @@
   {
     "name": "Waterfall",
     "file": "waterfall.json"
+  },
+  {
+    "name": "Machines",
+    "file": "machines.json"
   }
 ]
