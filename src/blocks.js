@@ -24,7 +24,7 @@ export const BLOCKS = {
   board: { id: 12, color: 0xc19a6b, solid: true, arm: true },
   motorLinearSlow: { id: 13, color: 0x2f7fb0, solid: true, motor: 'slow', linear: true },
   motorLinearFast: { id: 14, color: 0x5f5fd0, solid: true, motor: 'fast', linear: true },
-  shaft: { id: 15, color: 0x9aa0a6, shaft: true },
+  shaft: { id: 15, color: 0x9aa0a6, shaft: true, opacity: 0.4 }, // see-through: it's a guide rail the car rides THROUGH, not a wall
   start: { id: 7, color: 0xffffff, solid: false, unique: true },
   goal: { id: 8, color: 0x40e0a0, solid: false, wins: true },
 };
