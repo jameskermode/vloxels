@@ -14,6 +14,9 @@ const LABELS = {
   motorFast: 'Fast Motor',
   blade: 'Blade',
   board: 'Board',
+  motorLinearSlow: 'Slow Slider',
+  motorLinearFast: 'Fast Slider',
+  shaft: 'Shaft',
   start: 'Start',
   goal: 'Goal',
 };

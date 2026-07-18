@@ -53,7 +53,7 @@ export const CONFIG = {
   },
 
   // Motor blocks: how fast the two motor types spin (radians/sec).
-  motor: { slowSpeed: 0.6, fastSpeed: 4.0 },
+  motor: { slowSpeed: 0.6, fastSpeed: 4.0, linearSlowSpeed: 1.5, linearFastSpeed: 4.0 },
 
   // --- Player (used from Milestone 5 on) -----------------------------------
   player: {

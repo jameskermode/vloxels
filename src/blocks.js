@@ -22,6 +22,9 @@ export const BLOCKS = {
   motorFast: { id: 10, color: 0x8e44ad, solid: true, motor: 'fast' },
   blade: { id: 11, color: 0xe74c3c, solid: true, arm: true },
   board: { id: 12, color: 0xc19a6b, solid: true, arm: true },
+  motorLinearSlow: { id: 13, color: 0x2f7fb0, solid: true, motor: 'slow', linear: true },
+  motorLinearFast: { id: 14, color: 0x5f5fd0, solid: true, motor: 'fast', linear: true },
+  shaft: { id: 15, color: 0x9aa0a6, shaft: true },
   start: { id: 7, color: 0xffffff, solid: false, unique: true },
   goal: { id: 8, color: 0x40e0a0, solid: false, wins: true },
 };
