@@ -49,6 +49,8 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false) {
   let jumpBuffer = 0; // seconds a recent jump press stays "armed"
   let coyote = 0; // seconds of grounded-grace remaining
   let swimHeld = false; // jump button currently held (continuous swim up)
+  let jumpRising = false; // true while ascending a jump WE started (so we don't
+  //                         mistake it for a platform shoving us upward)
   const down = new THREE.Vector3(0, -1, 0);
   const groundReach = P.halfHeight + P.radius + 0.12; // centre-to-just-below-feet
 
@@ -147,6 +149,10 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false) {
     let control = grounded ? (knocked ? P.airControl : P.groundControl) : P.airControl;
     if (inWater) control = P.waterControl;
 
+    // Standing on something (or already falling) ends any jump-ascent we were
+    // tracking; a fresh jump below re-arms it.
+    if (grounded || v.y <= 0) jumpRising = false;
+
     let ny = v.y;
     if (deep) {
       // Treading deep water (not standing on anything).
@@ -169,7 +175,18 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false) {
       ny = P.jumpSpeed;
       jumpBuffer = 0;
       coyote = 0;
+      jumpRising = true;
     }
+
+    // Anti-glue: a moving platform (a rising lift) that we press our SIDE into
+    // will, via contact, try to drag us upward with it — so you can get "stuck"
+    // riding up the face of an elevator you walked into. The tell is: we're in
+    // the air (not standing on it) yet gaining height we didn't jump for. When
+    // that happens, cancel the unearned climb so we simply slide off instead of
+    // being carried up. Riding ON TOP is grounded, so it's never touched; a jump
+    // we started (jumpRising) is allowed to rise; blade knockback is horizontal.
+    const shoved = !grounded && !inWater && !jumpRising && ny > 0;
+    if (shoved) ny = 0;
 
     body.setLinvel({ x: lerp(v.x, targetX, control), y: ny, z: lerp(v.z, targetZ, control) }, true);
 
