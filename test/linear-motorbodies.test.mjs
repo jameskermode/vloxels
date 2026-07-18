@@ -25,14 +25,19 @@ await RAPIER.init();
   const box = phys.world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(17.5, 2.4, 16.5));
   phys.world.createCollider(RAPIER.ColliderDesc.cuboid(0.3, 0.3, 0.3).setFriction(1.0), box);
 
-  let maxY = -9, minCarY = 99;
-  for (let i = 0; i < 300; i++) {
+  let maxBoxY = -9;
+  const carYs = [];
+  for (let i = 0; i < 400; i++) {
     phys.step(1 / 60, (dt) => motors.update(dt));
-    maxY = Math.max(maxY, box.translation().y);
-    minCarY = Math.min(minCarY, motors.entries[0].body.translation().y);
+    maxBoxY = Math.max(maxBoxY, box.translation().y);
+    carYs.push(motors.entries[0].body.translation().y);
   }
-  ok(maxY > 4.5, `lift raises the box near the top (max y ${maxY.toFixed(2)})`);
-  ok(minCarY < 1.6, `car returns toward the bottom (ping-pong; min car y ${minCarY.toFixed(2)})`);
+  const peakCarY = Math.max(...carYs);
+  const peakStep = carYs.indexOf(peakCarY);
+  const postPeakMin = Math.min(...carYs.slice(peakStep + 1));
+  ok(maxBoxY > 4.5, `lift raises the box near the top (max y ${maxBoxY.toFixed(2)})`);
+  ok(peakCarY > 5.0, `car reaches near the top of the shaft (peak ${peakCarY.toFixed(2)})`);
+  ok(postPeakMin < peakCarY - 1.5, `car ping-pongs back DOWN after the top (post-peak min ${postPeakMin.toFixed(2)} vs peak ${peakCarY.toFixed(2)})`);
 }
 
 // A horizontal SLIDER translates its body back and forth along +x.

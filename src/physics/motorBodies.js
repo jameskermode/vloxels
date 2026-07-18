@@ -1,7 +1,8 @@
 // physics/motorBodies.js — one kinematic body per motor assembly. Each cell of
 // the assembly (motor hub + arms) gets a cuboid collider at its offset from the
-// motor centre; the body spins about y each fixed step. The player's existing
-// carry/knockback handling does the rest.
+// motor centre. Motors are either rotary (the body spins about y each fixed
+// step) or linear (the body translates along an axis, ping-ponging back and
+// forth). The player's existing carry/knockback handling does the rest.
 
 import RAPIER from '@dimforge/rapier3d-compat';
 import { CONFIG } from '../config.js';
@@ -19,7 +20,7 @@ function pingpong(phase, distance) {
 }
 
 export function createMotorBodies(world) {
-  const entries = []; // { body, angle, speed }
+  const entries = []; // rotary: { body, kind:'rotary', angle, speed }; linear: { body, kind:'linear', center, axis, distance, speed, phase }
 
   function build(assemblies) {
     clear();
