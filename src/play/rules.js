@@ -32,7 +32,7 @@ export function createRules({ eventQueue, playerColliderHandle, terrain, spinner
         hooks.onRespawn();
       } else if (def.collect) {
         terrain.removeSensor(sensorHandle);
-        spinners.removeCoin(info.cell);
+        spinners.removeItem(info.cell);
         coins += 1;
         hooks.onCoin(coins);
       } else if (def.wins && !won) {

@@ -23,6 +23,20 @@ function makeCoinMesh(color) {
   return group;
 }
 
+// A pair of swim flippers (two flattened, slightly splayed fins). Used both for
+// the world pickup and, reused, for the fins drawn under a wearing player.
+export function makeFlippersMesh(color) {
+  const group = new THREE.Group();
+  const finGeo = new THREE.BoxGeometry(0.18, 0.06, 0.42); // width, thickness, length
+  for (const side of [-1, 1]) {
+    const fin = new THREE.Mesh(finGeo, new THREE.MeshLambertMaterial({ color }));
+    fin.position.set(side * 0.12, 0, 0.05);
+    fin.rotation.y = side * 0.2; // splay outward into a shallow V
+    group.add(fin);
+  }
+  return group;
+}
+
 export function createSpinners(scene) {
   const group = new THREE.Group();
   scene.add(group);
@@ -40,21 +54,30 @@ export function createSpinners(scene) {
     items.clear();
   }
 
-  // (Re)build coin meshes from the level.
+  // (Re)build cosmetic pickups from the level: spinning coins + bobbing flippers.
   function rebuild(level) {
     clear();
     level.forEachBlock((x, y, z, id) => {
       const def = blockById(id);
-      if (!def || def.spinner !== 'coin') return;
-      const mesh = makeCoinMesh(def.color);
-      const baseY = y + 0.5;
+      let mesh, baseY, style;
+      if (def && def.spinner === 'coin') {
+        mesh = makeCoinMesh(def.color);
+        baseY = y + 0.5;
+        style = 'coin';
+      } else if (def && def.wear === 'scuba') {
+        mesh = makeFlippersMesh(def.color);
+        baseY = y + 0.2; // rests on the block below, not floating mid-cell
+        style = 'flippers';
+      } else {
+        return;
+      }
       mesh.position.set(x + 0.5, baseY, z + 0.5);
       group.add(mesh);
-      items.set(key(x, y, z), { style: def.spinner, mesh, baseY, cell: [x, y, z] });
+      items.set(key(x, y, z), { style, mesh, baseY, cell: [x, y, z] });
     });
   }
 
-  function removeCoin(cell) {
+  function removeItem(cell) {
     const k = key(...cell);
     const it = items.get(k);
     if (!it) return;
@@ -66,14 +89,14 @@ export function createSpinners(scene) {
     items.delete(k);
   }
 
-  // Animate: coins always spin+bob cosmetically.
+  // Animate: coins spin+bob, flippers only bob.
   function update(dt) {
     time += dt;
     for (const it of items.values()) {
-      it.mesh.rotation.y = time * S.coinSpeed;
       it.mesh.position.y = it.baseY + Math.sin(time * S.coinBobSpeed) * S.coinBob;
+      if (it.style === 'coin') it.mesh.rotation.y = time * S.coinSpeed;
     }
   }
 
-  return { rebuild, removeCoin, update, clear };
+  return { rebuild, removeItem, update, clear };
 }
