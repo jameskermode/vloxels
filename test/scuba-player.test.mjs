@@ -50,6 +50,21 @@ function idleDrop(wearing) {
   return y0 - player.body.translation().y; // >0 means it sank
 }
 
+// Hold SWIM-UP from deep water, return how far the player rose. Spawned deep so
+// the swim-up speed cap (swimSpeed vs scubaSwimSpeed) is the binding limit, not
+// the ease-to-surface term — so this exercises the third scuba effect.
+function swimUp(wearing) {
+  const { L, isWater } = pool();
+  const phys = createPhysicsWorld();
+  const terrain = createVoxelBody(phys.world);
+  mute(() => terrain.rebuild(L));
+  const player = createPlayer(phys.world, new THREE.Scene(), { x: 22, y: 4, z: 22 }, isWater);
+  if (wearing) player.setWearing('scuba');
+  const y0 = player.body.translation().y;
+  for (let i = 0; i < 30; i++) { player.setIntent(0, 0); player.setSwimming(true); player.fixedUpdate(1 / 60); phys.world.step(phys.eventQueue); }
+  return player.body.translation().y - y0;
+}
+
 // Dry-land: walk +x on a plain floor, distance must be identical wearing or not.
 function landDist(wearing) {
   const L = new Level(20, 6, 8);
@@ -66,6 +81,7 @@ function landDist(wearing) {
 
 ok(swimDist(true) > swimDist(false) + 0.5, `scuba swims faster (${swimDist(true).toFixed(2)} vs ${swimDist(false).toFixed(2)})`);
 ok(idleDrop(true) < idleDrop(false) - 0.3, `scuba hovers, un-equipped sinks (${idleDrop(true).toFixed(2)} vs ${idleDrop(false).toFixed(2)})`);
+ok(swimUp(true) > swimUp(false) + 0.4, `scuba swims UP faster (${swimUp(true).toFixed(2)} vs ${swimUp(false).toFixed(2)})`);
 ok(Math.abs(landDist(true) - landDist(false)) < 0.01, `dry-land movement identical with/without scuba`);
 
 // Persistence: wearing survives a respawn.
