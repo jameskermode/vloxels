@@ -76,5 +76,10 @@ export const CONFIG = {
     swimSpeed: 6.5, // max upward swim speed when deep underwater
     swimApproach: 5, // how hard to ease toward the surface (higher = firmer float)
     swimJump: 8, // upward hop from a deliberate tap in water (climb out onto a ledge)
+    // Scuba kit: while worn AND in water, you move faster and float instead of
+    // sinking. Out of water it does nothing. Lasts until you finish the level.
+    scubaSpeedMult: 1.3, // horizontal speed (× land) underwater with scuba (vs 0.5 normally)
+    scubaSwimSpeed: 8.5, // faster swim-up with scuba (vs 6.5)
+    scubaSink: 0, // neutral buoyancy: hover instead of sinking when idle deep
   },
 };

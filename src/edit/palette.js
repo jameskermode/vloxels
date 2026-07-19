@@ -17,6 +17,7 @@ const LABELS = {
   motorLinearSlow: 'Slow Slider',
   motorLinearFast: 'Fast Slider',
   shaft: 'Shaft',
+  scuba: 'Scuba Kit',
   start: 'Start',
   goal: 'Goal',
 };
