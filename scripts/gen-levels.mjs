@@ -89,6 +89,7 @@ const spinner = (L, x, y, z, kind) => {
   L.set(38, 3, 32, B.coin.id);
   L.set(10, 1, 32, B.start.id); // west ground
   L.set(52, 1, 32, B.goal.id); // east ground
+  L.set(14, 1, 32, B.scuba.id); // grab the flippers on the way to the pool, then zoom through the water
   save(L, 'waterfall.json');
 }
 

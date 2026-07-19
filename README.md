@@ -77,6 +77,7 @@ playable from the Pages URL on any tablet, no install.
 | **Slow / Fast Slider** | a linear motor: draw a straight **Shaft** line for the track (up = elevator, sideways = sliding platform) and attach Board/Blade cubes; the car slides along the shaft and back, carrying you |
 | **Shaft** | the fixed rail a slider's car travels along; its length sets how far it goes. Drawn see-through because the car rides *through* it — it's a guide, not a wall, so you pass through it too |
 | **Water** | a flowing source — spreads down & sideways. Wade shallow water at half speed; deep water you sink into and tread (hold Space to swim up to a shallow edge). Doesn't kill you |
+| **Scuba Kit** | a pair of flippers resting on a block — walk over it to wear it, then move fast and float in water for the rest of the run (🤿 shows up top). Vanishes when picked up |
 | **Start** | where the player spawns (only one) |
 | **Goal** | reach it to win, with your coin tally + Replay (only one) |
 
