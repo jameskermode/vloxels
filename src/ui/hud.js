@@ -130,6 +130,30 @@ export function createCoinCounter() {
   };
 }
 
+// Small "you have the scuba kit" chip, shown while wearing it.
+export function createScubaIndicator() {
+  const el = document.createElement('div');
+  Object.assign(el.style, {
+    position: 'fixed',
+    top: '8px',
+    right: '8px',
+    padding: '6px 12px',
+    background: 'rgba(0,0,0,0.45)',
+    borderRadius: '10px',
+    color: '#8fe3ff',
+    font: '700 18px system-ui, sans-serif',
+    zIndex: '10',
+    display: 'none',
+  });
+  el.textContent = '🤿 Scuba';
+  document.body.appendChild(el);
+  return {
+    el,
+    show() { el.style.display = ''; },
+    hide() { el.style.display = 'none'; },
+  };
+}
+
 // Win overlay: coin tally + Replay button. onReplay() restarts the level.
 export function createWinOverlay({ onReplay }) {
   const overlay = document.createElement('div');

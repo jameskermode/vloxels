@@ -35,6 +35,10 @@ export function createRules({ eventQueue, playerColliderHandle, terrain, spinner
         spinners.removeItem(info.cell);
         coins += 1;
         hooks.onCoin(coins);
+      } else if (def.wear) {
+        terrain.removeSensor(sensorHandle);
+        spinners.removeItem(info.cell);
+        hooks.onWear(def.wear);
       } else if (def.wins && !won) {
         won = true;
         hooks.onWin(coins);

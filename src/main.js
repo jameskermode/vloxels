@@ -23,6 +23,7 @@ import {
   createLayerControl,
   createModeButton,
   createCoinCounter,
+  createScubaIndicator,
   createWinOverlay,
   createLevelToolbar,
   showCodeDialog,
@@ -144,6 +145,7 @@ async function main() {
   layerControl.setValue(editor.getLayer());
 
   const coinCounter = createCoinCounter();
+  const scubaIndicator = createScubaIndicator();
   const winOverlay = createWinOverlay({ onReplay: () => restart() });
   const touch = createTouchControls({ onJump: () => mode === 'play' && play.player.requestJump() });
 
@@ -295,6 +297,11 @@ async function main() {
           coinCounter.set(n);
           sfx.coin();
         },
+        onWear: (kind) => {
+          play.player.setWearing(kind);
+          scubaIndicator.show();
+          sfx.coin(); // a little pickup blip (reuse the coin sound)
+        },
         onWin: (n) => {
           winOverlay.show(n, totalCoins);
           sfx.win();
@@ -334,6 +341,7 @@ async function main() {
     spinners.rebuild(level);
     refreshWater();
     coinCounter.hide();
+    scubaIndicator.hide();
     winOverlay.hide();
     controls.enabled = true;
     controls.target.set(CONFIG.grid.x / 2, 2, CONFIG.grid.z / 2);
