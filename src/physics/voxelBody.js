@@ -82,7 +82,7 @@ export function createVoxelBody(world) {
     // player samples the water field directly for wade/sink physics.)
     level.forEachBlock((x, y, z, id) => {
       const def = blockById(id);
-      if (def && (def.collect || def.wins)) addSensor(def.key, x, y, z);
+      if (def && (def.collect || def.wins || def.wear)) addSensor(def.key, x, y, z);
     });
 
     console.log(
