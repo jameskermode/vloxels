@@ -11,12 +11,16 @@ const ok = (c, m) => (c ? pass++ : (fail++, console.error('FAIL:', m)));
 await RAPIER.init();
 const mute = (f) => { const l = console.log; console.log = () => {}; try { return f(); } finally { console.log = l; } };
 
-// A deep water pool: solid floor at y0, water cells y1..y6 over a 9x9 area.
+// A big, DEEP water pool: solid floor at y0, water cells y1..y12 over a wide
+// 40x40 area. Deliberately large so a swimmer (even at scuba speed) stays inside
+// the water for the whole run, and deep enough that an idle sinker never reaches
+// the bottom within the window — otherwise the very effect we measure gets
+// masked (a swimmer falling off the edge, or both runs grounding out).
 function pool() {
-  const L = new Level(12, 8, 12);
-  for (let x = 2; x <= 10; x++) for (let z = 2; z <= 10; z++) L.set(x, 0, z, B.solid.id);
+  const L = new Level(44, 16, 44);
+  for (let x = 2; x <= 42; x++) for (let z = 2; z <= 42; z++) L.set(x, 0, z, B.solid.id);
   const wet = new Set();
-  for (let x = 2; x <= 10; x++) for (let z = 2; z <= 10; z++) for (let y = 1; y <= 6; y++) wet.add(`${x},${y},${z}`);
+  for (let x = 2; x <= 42; x++) for (let z = 2; z <= 42; z++) for (let y = 1; y <= 12; y++) wet.add(`${x},${y},${z}`);
   return { L, isWater: (x, y, z) => wet.has(`${x},${y},${z}`) };
 }
 
@@ -26,14 +30,10 @@ function swimDist(wearing) {
   const phys = createPhysicsWorld();
   const terrain = createVoxelBody(phys.world);
   mute(() => terrain.rebuild(L));
-  const player = createPlayer(phys.world, new THREE.Scene(), { x: 4, y: 4, z: 6 }, isWater);
+  const player = createPlayer(phys.world, new THREE.Scene(), { x: 6, y: 10, z: 22 }, isWater);
   if (wearing) player.setWearing('scuba');
   const x0 = player.body.translation().x;
-  // 45 steps (0.75s), not 120: at scubaSpeedMult the player crosses this 9-wide
-  // pool and free-falls off the edge well before 120 steps, which masks the
-  // very effect this measures. 45 steps keeps both runs inside the pool with
-  // a wide margin while still separating the two speeds clearly.
-  for (let i = 0; i < 45; i++) { player.setIntent(1, 0); player.setSwimming(false); player.fixedUpdate(1 / 60); phys.world.step(phys.eventQueue); }
+  for (let i = 0; i < 90; i++) { player.setIntent(1, 0); player.setSwimming(false); player.fixedUpdate(1 / 60); phys.world.step(phys.eventQueue); }
   return player.body.translation().x - x0;
 }
 
@@ -43,14 +43,10 @@ function idleDrop(wearing) {
   const phys = createPhysicsWorld();
   const terrain = createVoxelBody(phys.world);
   mute(() => terrain.rebuild(L));
-  const player = createPlayer(phys.world, new THREE.Scene(), { x: 6, y: 4.5, z: 6 }, isWater);
+  const player = createPlayer(phys.world, new THREE.Scene(), { x: 22, y: 10, z: 22 }, isWater);
   if (wearing) player.setWearing('scuba');
   const y0 = player.body.translation().y;
-  // 45 steps, not 120: the pool floor is only 2.75 units below the spawn, and
-  // by 120 steps BOTH the equipped and unequipped runs have already sunk to
-  // the bottom and grounded, making their drop identical (masking the
-  // effect). 45 steps captures both while still mid-sink.
-  for (let i = 0; i < 45; i++) { player.setIntent(0, 0); player.setSwimming(false); player.fixedUpdate(1 / 60); phys.world.step(phys.eventQueue); }
+  for (let i = 0; i < 90; i++) { player.setIntent(0, 0); player.setSwimming(false); player.fixedUpdate(1 / 60); phys.world.step(phys.eventQueue); }
   return y0 - player.body.translation().y; // >0 means it sank
 }
 
