@@ -1,8 +1,9 @@
-// render/spinners.js — the visible spinners: coins.
+// render/spinners.js — the visible cosmetic pickups: spinning+bobbing coins and
+// bobbing (non-spinning) scuba flippers.
 //
-// Coins have no body (they're sensors) so they spin/bob cosmetically in both
-// EDIT and PLAY. Motor assemblies (blades/platforms) are drawn and synced by
-// render/assemblies.js instead.
+// These have no physics body (they're sensors) so they animate cosmetically in
+// both EDIT and PLAY. Motor assemblies (blades/platforms) are drawn and synced
+// by render/assemblies.js instead.
 
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
