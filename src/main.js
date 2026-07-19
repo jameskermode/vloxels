@@ -298,7 +298,7 @@ async function main() {
           sfx.coin();
         },
         onWear: (kind) => {
-          play.player.setWearing(kind);
+          player.setWearing(kind);
           scubaIndicator.show();
           sfx.coin(); // a little pickup blip (reuse the coin sound)
         },
