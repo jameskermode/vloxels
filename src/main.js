@@ -269,7 +269,7 @@ async function main() {
     const terrain = createVoxelBody(physics.world);
     terrain.rebuild(level, movingCells); // solid + coin/goal sensors; assembly cells excluded
     voxels.rebuild(level, movingCells); // hide the cells that are now spinning
-    spinners.rebuild(level); // coins only now
+    spinners.rebuild(level); // cosmetic pickups: coins + scuba flippers
     // Ticked water: starts at the sources and spreads/pours ring by ring. The
     // wetSet tracks which cells are currently water so the player can wade/sink.
     const waterSim = createWaterSim();

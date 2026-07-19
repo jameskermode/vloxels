@@ -241,6 +241,10 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false) {
     scene.remove(mesh);
     mesh.geometry.dispose();
     mesh.material.dispose();
+    wornFins.traverse((o) => {
+      if (o.geometry) o.geometry.dispose();
+      if (o.material) o.material.dispose();
+    });
     world.removeRigidBody(body);
   }
 
