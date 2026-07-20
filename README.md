@@ -78,6 +78,7 @@ playable from the Pages URL on any tablet, no install.
 | **Shaft** | the fixed rail a slider's car travels along; its length sets how far it goes. Drawn see-through because the car rides *through* it — it's a guide, not a wall, so you pass through it too |
 | **Water** | a flowing source — spreads down & sideways. Wade shallow water at half speed; deep water you sink into and tread (hold Space to swim up to a shallow edge). Doesn't kill you |
 | **Scuba Kit** | a pair of flippers resting on a block — walk over it to wear it, then move fast and float in water for the rest of the run (🤿 shows up top). Vanishes when picked up |
+| **Glider** | a hang-glider + jetpack — walk over it to wear it, then fly: hold Space for zippy thrust up, release to glide down, steer with the keys (🪂 up top). Crash into a wall side-on and it drops to the floor to grab again |
 | **Start** | where the player spawns (only one) |
 | **Goal** | reach it to win, with your coin tally + Replay (only one) |
 
@@ -98,7 +99,7 @@ to fit). The default world size is set in [`src/config.js`](src/config.js).
 They persist to `localStorage`, and travel between the MacBook, Pi and tablets
 via **Share codes** (see Controls). Bundled examples live in
 [`public/levels/`](public/levels/): **Coin Run**, **Spin Bridge**,
-**Blade Gauntlet**, **Waterfall**, and **Machines** (regenerate them with
+**Blade Gauntlet**, **Waterfall**, **Machines**, and **Sky Course** (regenerate them with
 `node scripts/gen-levels.mjs`).
 
 ## Performance

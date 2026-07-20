@@ -18,5 +18,9 @@
   {
     "name": "Machines",
     "file": "machines.json"
+  },
+  {
+    "name": "Sky Course",
+    "file": "sky-course.json"
   }
 ]

@@ -115,12 +115,30 @@ const spinner = (L, x, y, z, kind) => {
   save(L, 'machines.json');
 }
 
+// 6) Sky Course — grab the glider, then fly over gaps and between walls to the
+//    goal. Crash into a wall and the glider drops for another try.
+{
+  const L = level('Sky Course');
+  box(L, 2, 12, 0, 0, 28, 36, B.solid.id); // start platform
+  L.set(6, 1, 32, B.glider.id); // grab the glider here
+  L.set(4, 1, 32, B.start.id);
+  // a couple of tall walls with gaps to fly between
+  for (let y = 1; y <= 6; y++) for (let z = 28; z <= 36; z++) { if (z < 31 || z > 33) L.set(20, y, z, B.solid.id); }
+  for (let y = 1; y <= 6; y++) for (let z = 28; z <= 36; z++) { if (z < 30 || z > 32) L.set(30, y, z, B.solid.id); }
+  // landing pad + goal across a big gap
+  box(L, 44, 52, 0, 0, 28, 36, B.solid.id);
+  L.set(48, 1, 32, B.goal.id);
+  L.set(48, 1, 30, B.coin.id);
+  save(L, 'sky-course.json');
+}
+
 const manifest = [
   { name: 'Coin Run', file: 'coin-run.json' },
   { name: 'Spin Bridge', file: 'spin-bridge.json' },
   { name: 'Blade Gauntlet', file: 'blade-gauntlet.json' },
   { name: 'Waterfall', file: 'waterfall.json' },
   { name: 'Machines', file: 'machines.json' },
+  { name: 'Sky Course', file: 'sky-course.json' },
 ];
 writeFileSync('./public/levels/index.json', JSON.stringify(manifest, null, 2));
 console.log('wrote index.json');
