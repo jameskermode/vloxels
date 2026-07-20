@@ -1,7 +1,5 @@
 import RAPIER from '@dimforge/rapier3d-compat';
 import * as THREE from 'three';
-import { Level } from '../src/level.js';
-import { BLOCKS as B } from '../src/blocks.js';
 import { createPhysicsWorld } from '../src/physics/world.js';
 import { createPlayer } from '../src/play/player.js';
 
