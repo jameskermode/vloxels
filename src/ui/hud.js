@@ -154,6 +154,19 @@ export function createScubaIndicator() {
   };
 }
 
+// Small "you're flying" chip, shown while the glider is worn.
+export function createGliderIndicator() {
+  const el = document.createElement('div');
+  Object.assign(el.style, {
+    position: 'fixed', top: '8px', right: '8px', padding: '6px 12px',
+    background: 'rgba(0,0,0,0.45)', borderRadius: '10px', color: '#b6f0a0',
+    font: '700 18px system-ui, sans-serif', zIndex: '10', display: 'none',
+  });
+  el.textContent = '🪂 Flying';
+  document.body.appendChild(el);
+  return { el, show() { el.style.display = ''; }, hide() { el.style.display = 'none'; } };
+}
+
 // Win overlay: coin tally + Replay button. onReplay() restarts the level.
 export function createWinOverlay({ onReplay }) {
   const overlay = document.createElement('div');

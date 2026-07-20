@@ -24,6 +24,7 @@ import {
   createModeButton,
   createCoinCounter,
   createScubaIndicator,
+  createGliderIndicator,
   createWinOverlay,
   createLevelToolbar,
   showCodeDialog,
@@ -146,6 +147,7 @@ async function main() {
 
   const coinCounter = createCoinCounter();
   const scubaIndicator = createScubaIndicator();
+  const gliderIndicator = createGliderIndicator();
   const winOverlay = createWinOverlay({ onReplay: () => restart() });
   const touch = createTouchControls({ onJump: () => mode === 'play' && play.player.requestJump() });
 
@@ -259,6 +261,19 @@ async function main() {
   let mode = 'edit';
   let play = null;
 
+  // A crashed/dropped glider falls to the nearest floor below and becomes a
+  // pickup again (walk back and grab it). Over a pit it lands at the last-
+  // grounded cell the player passed in, so it's never lost.
+  function dropGlider(pos) {
+    const cx = Math.floor(pos.x), cz = Math.floor(pos.z);
+    let fy = Math.floor(pos.y);
+    while (fy > 0 && !level.isSolid(cx, fy, cz)) fy--;
+    const dy = level.isSolid(cx, fy, cz) ? fy + 1 : Math.max(0, Math.floor(pos.y));
+    play.terrain.addSensor('glider', cx, dy, cz);
+    spinners.addItem([cx, dy, cz], BLOCKS.glider);
+    sfx.coin(); // a little "clunk" (reuse the pickup blip)
+  }
+
   function enterPlay() {
     const snapshot = level.blocks.slice();
     const physics = createPhysicsWorld();
@@ -278,8 +293,10 @@ async function main() {
     water.rebuild(wet);
     let waterAcc = 0;
     const balls = createDebugBalls(physics.world, scene);
-    const player = createPlayer(physics.world, scene, spawnFor(level), (x, y, z) =>
-      wetSet.has(`${x},${y},${z}`),
+    const player = createPlayer(
+      physics.world, scene, spawnFor(level),
+      (x, y, z) => wetSet.has(`${x},${y},${z}`),
+      (pos) => dropGlider(pos),
     );
 
     const totalCoins = countCoins(level);
@@ -299,8 +316,9 @@ async function main() {
         },
         onWear: (kind) => {
           player.setWearing(kind);
-          scubaIndicator.show();
-          sfx.coin(); // a little pickup blip (reuse the coin sound)
+          scubaIndicator[kind === 'scuba' ? 'show' : 'hide']();
+          gliderIndicator[kind === 'fly' ? 'show' : 'hide']();
+          sfx.coin();
         },
         onWin: (n) => {
           winOverlay.show(n, totalCoins);
@@ -342,6 +360,7 @@ async function main() {
     refreshWater();
     coinCounter.hide();
     scubaIndicator.hide();
+    gliderIndicator.hide();
     winOverlay.hide();
     controls.enabled = true;
     controls.target.set(CONFIG.grid.x / 2, 2, CONFIG.grid.z / 2);
