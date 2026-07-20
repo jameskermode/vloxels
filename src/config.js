@@ -91,6 +91,8 @@ export const CONFIG = {
       control: 0.5, // horizontal steering responsiveness (0..1)
       riseEase: 0.4, // how fast vertical velocity eases toward its target
       crashSpeed: 2.0, // commanded ≥ this horizontal speed but blocked ⇒ wall crash
+      tiltAngle: -1.3, // radians the pilot leans toward prone while flying (~-75°)
+      tiltEase: 0.12, // how fast that tilt eases in/out (0..1 per rendered frame)
     },
   },
 };

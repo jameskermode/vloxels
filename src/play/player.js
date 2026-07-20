@@ -15,10 +15,51 @@ import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { CONFIG } from '../config.js';
 import { BLOCKS } from '../blocks.js';
-import { makeFlippersMesh, makeGliderMesh } from '../render/spinners.js';
+import { makeFlippersMesh } from '../render/spinners.js';
 
 const P = CONFIG.player;
 const lerp = (a, b, t) => a + (b - a) * t;
+
+// A big flat green wing that hovers overhead while flying (stays level — it is
+// NOT a child of the pilot, so the pilot can tilt prone beneath it).
+function makeSailMesh() {
+  const tri = new THREE.Shape();
+  tri.moveTo(0, 1.1);
+  tri.lineTo(-1.4, -0.9);
+  tri.lineTo(1.4, -0.9);
+  tri.closePath();
+  const sail = new THREE.Mesh(
+    new THREE.ShapeGeometry(tri),
+    new THREE.MeshLambertMaterial({ color: 0x4caf50, side: THREE.DoubleSide }),
+  );
+  sail.rotation.x = -Math.PI / 2; // lie flat like a wing
+  sail.name = 'glider-sail';
+  return sail;
+}
+
+// Two grey jetpack cylinders strapped to the pilot's back, each with a flame
+// cone (hidden until thrusting). Returned with the flame meshes so the animation
+// can flicker + toggle them. Strapped to the PILOT, so they swing into view as
+// the pilot tilts prone.
+function makeJetpacksMesh() {
+  const group = new THREE.Group();
+  const flames = [];
+  const jetGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.55, 10);
+  const flameGeo = new THREE.ConeGeometry(0.11, 0.4, 8);
+  for (const side of [-1, 1]) {
+    const jet = new THREE.Mesh(jetGeo, new THREE.MeshLambertMaterial({ color: 0x9098a0 }));
+    jet.position.set(side * 0.26, -0.1, 0.18); // on the back, along the body
+    group.add(jet);
+    const flame = new THREE.Mesh(flameGeo, new THREE.MeshBasicMaterial({ color: 0xffa030 }));
+    flame.position.set(side * 0.26, -0.5, 0.18); // out the tail of the jetpack
+    flame.rotation.x = Math.PI; // cone points along -y (the thrust exhaust)
+    flame.visible = false;
+    flame.name = 'jet-flame';
+    group.add(flame);
+    flames.push(flame);
+  }
+  return { group, flames };
+}
 
 export function createPlayer(world, scene, spawn, isWaterCell = () => false, onGliderDrop = () => {}) {
   const spawnPos = { x: spawn.x, y: spawn.y, z: spawn.z };
@@ -40,11 +81,15 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false, onG
   );
 
   // --- Mesh (render follows physics) ----------------------------------------
+  // `root` follows the body; `mesh` (the capsule) can tilt inside it toward a
+  // prone glide pose without the wing tilting with it.
+  const root = new THREE.Group();
+  scene.add(root);
   const mesh = new THREE.Mesh(
     new THREE.CapsuleGeometry(P.radius, P.halfHeight * 2, 6, 12),
     new THREE.MeshLambertMaterial({ color: 0xff9a3c }),
   );
-  scene.add(mesh);
+  root.add(mesh);
 
   // Gear worn on the player. Mutually exclusive: one slot, latest pickup wins.
   const wornFins = makeFlippersMesh(BLOCKS.scuba.color);
@@ -53,11 +98,20 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false, onG
   wornFins.visible = false;
   mesh.add(wornFins);
 
-  const gliderRig = makeGliderMesh(1); // green sail overhead + grey jetpacks on the back
-  gliderRig.visible = false;
-  mesh.add(gliderRig);
+  // Glider: a big wing that hovers level overhead (child of root), plus jetpacks
+  // strapped to the pilot (child of the tilting capsule) so they come into view
+  // as the pilot leans prone. Both hidden until the glider is worn.
+  const sail = makeSailMesh();
+  sail.position.set(0, 0.9, 0);
+  sail.visible = false;
+  root.add(sail);
+  const { group: jetpacks, flames } = makeJetpacksMesh();
+  jetpacks.visible = false;
+  mesh.add(jetpacks);
 
   let gear = null; // null | 'scuba' | 'fly'
+  let tilt = 0; // 0 = upright, 1 = prone; eased toward the target each frame
+  let animTime = 0; // drives the flame flicker
   let lastGroundedPos = { x: spawn.x, y: spawn.y, z: spawn.z }; // safe drop spot over a pit
   let prevFlyPos = null; // position at the previous fly step (crash detection)
   let prevCmdVelH = 0; // horizontal speed we drove last fly step (crash detection)
@@ -119,7 +173,8 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false, onG
   function setWearing(kind) {
     gear = kind;
     wornFins.visible = kind === 'scuba';
-    gliderRig.visible = kind === 'fly';
+    sail.visible = kind === 'fly';
+    jetpacks.visible = kind === 'fly';
   }
 
   // Is the given world point inside a water cell?
@@ -144,7 +199,8 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false, onG
   // Drop the glider (crash or death): clear flight and tell main where it fell.
   function crash(pos) {
     gear = null;
-    gliderRig.visible = false;
+    sail.visible = false;
+    jetpacks.visible = false;
     prevFlyPos = null;
     onGliderDrop({ x: pos.x, y: pos.y, z: pos.z });
   }
@@ -265,7 +321,8 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false, onG
   function respawn() {
     if (gear === 'fly') {
       gear = null;
-      gliderRig.visible = false;
+      sail.visible = false;
+    jetpacks.visible = false;
       prevFlyPos = null;
       onGliderDrop({ ...lastGroundedPos }); // drop at the last real floor, never lost
     }
@@ -277,9 +334,18 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false, onG
 
   function syncMesh() {
     const t = body.translation();
-    const r = body.rotation();
-    mesh.position.set(t.x, t.y, t.z);
-    mesh.quaternion.set(r.x, r.y, r.z, r.w);
+    root.position.set(t.x, t.y, t.z);
+    // Ease the capsule between upright and prone (the body stays upright — this
+    // is purely the visual). Flying ⇒ lean prone, revealing the jetpacks.
+    tilt += ((gear === 'fly' ? 1 : 0) - tilt) * P.fly.tiltEase;
+    mesh.rotation.set(tilt * P.fly.tiltAngle, 0, 0);
+    // Flames only while the jetpack is firing (flying + Space held); flicker.
+    animTime += 0.12;
+    const thrusting = gear === 'fly' && swimHeld;
+    for (const fl of flames) {
+      fl.visible = thrusting;
+      if (thrusting) fl.scale.set(1, 0.7 + 0.5 * Math.abs(Math.sin(animTime * 4 + fl.position.x * 7)), 1);
+    }
   }
 
   function position() {
@@ -287,17 +353,16 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false, onG
   }
 
   function dispose() {
-    scene.remove(mesh);
+    scene.remove(root);
+    const freeMesh = (o) => {
+      if (o.geometry) o.geometry.dispose();
+      if (o.material) o.material.dispose();
+    };
     mesh.geometry.dispose();
     mesh.material.dispose();
-    wornFins.traverse((o) => {
-      if (o.geometry) o.geometry.dispose();
-      if (o.material) o.material.dispose();
-    });
-    gliderRig.traverse((o) => {
-      if (o.geometry) o.geometry.dispose();
-      if (o.material) o.material.dispose();
-    });
+    wornFins.traverse(freeMesh);
+    sail.traverse(freeMesh);
+    jetpacks.traverse(freeMesh);
     world.removeRigidBody(body);
   }
 
