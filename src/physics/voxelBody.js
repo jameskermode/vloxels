@@ -31,6 +31,19 @@ export function createVoxelBody(world) {
     }
   }
 
+  // Add a sensor cuboid for a pickup block (coins/goal from the level, or a
+  // glider dropped at runtime). Fires COLLISION_EVENTS that rules.js drains.
+  function addSensor(blockKey, x, y, z) {
+    const collider = world.createCollider(
+      RAPIER.ColliderDesc.cuboid(SENSOR_HALF, SENSOR_HALF, SENSOR_HALF)
+        .setTranslation(x + 0.5, y + 0.5, z + 0.5)
+        .setSensor(true)
+        .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS),
+      body,
+    );
+    sensors.set(collider.handle, { blockKey, cell: [x, y, z], collider });
+  }
+
   // (Re)build the terrain body from the current level. Returns collider count.
   function rebuild(level, movingCells) {
     remove();
@@ -66,20 +79,8 @@ export function createVoxelBody(world) {
     }
 
     // Sensor colliders fire intersection events that rules.js turns into coin
-    // pickups / winning. One shrunk cuboid each, attached to the static body.
-    const addSensor = (blockKey, x, y, z) => {
-      const collider = world.createCollider(
-        RAPIER.ColliderDesc.cuboid(SENSOR_HALF, SENSOR_HALF, SENSOR_HALF)
-          .setTranslation(x + 0.5, y + 0.5, z + 0.5)
-          .setSensor(true)
-          .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS),
-        body,
-      );
-      sensors.set(collider.handle, { blockKey, cell: [x, y, z], collider });
-    };
-
-    // Coins and the goal come from placed blocks. (Water is not a sensor — the
-    // player samples the water field directly for wade/sink physics.)
+    // pickups / winning. Coins and the goal come from placed blocks. (Water is not
+    // a sensor — the player samples the water field directly for wade/sink physics.)
     level.forEachBlock((x, y, z, id) => {
       const def = blockById(id);
       if (def && (def.collect || def.wins || def.wear)) addSensor(def.key, x, y, z);
@@ -104,6 +105,7 @@ export function createVoxelBody(world) {
     rebuild,
     remove,
     removeSensor,
+    addSensor,
     get sensors() {
       return sensors;
     },
