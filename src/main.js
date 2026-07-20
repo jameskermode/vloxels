@@ -261,9 +261,9 @@ async function main() {
   let mode = 'edit';
   let play = null;
 
-  // A crashed/dropped glider falls to the nearest floor below and becomes a
-  // pickup again (walk back and grab it). Over a pit it lands at the last-
-  // grounded cell the player passed in, so it's never lost.
+  // Drop a glider at `pos`: it settles on the nearest floor below and becomes a
+  // pickup again (walk back and grab it). On DEATH the player passes its last-
+  // grounded position here, so a death-drop always lands somewhere reachable.
   function dropGlider(pos) {
     const cx = Math.floor(pos.x), cz = Math.floor(pos.z);
     let fy = Math.floor(pos.y);
