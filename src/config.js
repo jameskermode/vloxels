@@ -95,6 +95,7 @@ export const CONFIG = {
       tiltEase: 0.12, // how fast that tilt eases in/out (0..1 per rendered frame)
       yawEase: 0.15, // how fast the wing+pilot turns to face the way you're going
       burstEase: 0.2, // how fast the jetpacks swing vertical during a thrust burst
+      boostSpeed: 14, // hidden Shift+Space: aligned jetpack thrust ⇒ fast forward dash
     },
   },
 };

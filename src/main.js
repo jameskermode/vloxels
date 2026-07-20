@@ -459,6 +459,7 @@ async function main() {
       const intent = readMoveIntent();
       play.player.setIntent(intent.x, intent.z);
       play.player.setSwimming(jumpHeld || touch.isJumpHeld());
+      play.player.setBoosting(keys.has('ShiftLeft') || keys.has('ShiftRight')); // hidden Shift+Space jet boost
       const stepMs = play.physics.step(dt, (fixedDt) => {
         play.player.fixedUpdate(fixedDt);
         play.motorBodies.update(fixedDt);

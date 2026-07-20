@@ -104,5 +104,33 @@ ok(flames().every((f) => !f.visible), 'flames off after removing the glider');
   ok(Math.abs(p3.mesh.rotation.x) < 0.1, `landed pilot stands upright even with the glider on (rot.x ${p3.mesh.rotation.x.toFixed(2)})`);
 }
 
+// Hidden Shift+Space boost: aligned jetpacks give extra FORWARD speed (not lift),
+// and stay parallel to the body rather than swinging vertical.
+{
+  const mk = () => {
+    const ph = createPhysicsWorld();
+    const p = createPlayer(ph.world, new THREE.Scene(), { x: 0, y: 8, z: 0 }, () => false, () => {});
+    p.setWearing('fly');
+    return { ph, p };
+  };
+  const norm = mk(); // plain thrust (Space)
+  const boost = mk(); // Shift+Space
+  boost.p.setBoosting(true);
+  for (let i = 0; i < 40; i++) {
+    for (const { p, ph } of [norm, boost]) {
+      p.setIntent(1, 0); p.setSwimming(true); p.fixedUpdate(1 / 60); ph.world.step(ph.eventQueue);
+    }
+  }
+  ok(boost.p.body.translation().x > norm.p.body.translation().x + 1,
+    `Shift+Space dashes forward faster (x ${boost.p.body.translation().x.toFixed(1)} vs ${norm.p.body.translation().x.toFixed(1)})`);
+
+  // Jetpacks stay aligned with the (prone) body during a boost, not vertical.
+  let jg = null;
+  boost.p.mesh.parent.traverse((o) => { if (o.name === 'jet-flame') jg = o.parent; });
+  for (let i = 0; i < 40; i++) boost.p.syncMesh();
+  ok(Math.abs(jg.rotation.x - CONFIG.player.fly.tiltAngle) < 0.2,
+    `boost keeps the jetpacks aligned with the body (rot.x ${jg.rotation.x.toFixed(2)} ~ ${CONFIG.player.fly.tiltAngle})`);
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail) process.exit(1);

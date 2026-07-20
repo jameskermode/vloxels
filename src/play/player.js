@@ -126,6 +126,7 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false, onG
   let jumpBuffer = 0; // seconds a recent jump press stays "armed"
   let coyote = 0; // seconds of grounded-grace remaining
   let swimHeld = false; // jump button currently held (continuous swim up)
+  let boostHeld = false; // Shift held — hidden Shift+Space horizontal jet boost
   let jumpRising = false; // true while ascending a jump WE started (so we don't
   //                         mistake it for a platform shoving us upward)
   const down = new THREE.Vector3(0, -1, 0);
@@ -171,6 +172,11 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false, onG
   // Called each frame by main: is the jump button currently held? (swim up)
   function setSwimming(held) {
     swimHeld = held;
+  }
+
+  // Called each frame by main: is Shift held? (hidden Shift+Space jet boost)
+  function setBoosting(held) {
+    boostHeld = held;
   }
 
   // Put on gear (mutually exclusive). Scuba lasts until the level ends; the
@@ -223,9 +229,22 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false, onG
       }
     }
     const v = body.linvel();
-    const nvx = lerp(v.x, intent.x * P.fly.speed, P.fly.control);
-    const nvz = lerp(v.z, intent.z * P.fly.speed, P.fly.control);
-    const ny = lerp(v.y, swimHeld ? P.fly.rise : P.fly.sink, P.fly.riseEase);
+    const boosting = swimHeld && boostHeld; // hidden Shift+Space forward jet boost
+    // Horizontal: steer at fly.speed, or — while boosting — a fast forward dash
+    // toward where we're steering (or already going if no steer input).
+    let tx = intent.x * P.fly.speed;
+    let tz = intent.z * P.fly.speed;
+    if (boosting) {
+      let dx = intent.x, dz = intent.z;
+      if (dx === 0 && dz === 0) { dx = v.x; dz = v.z; } // no steer ⇒ push the way we move
+      const d = Math.hypot(dx, dz);
+      if (d > 0.001) { tx = (dx / d) * P.fly.boostSpeed; tz = (dz / d) * P.fly.boostSpeed; }
+    }
+    const nvx = lerp(v.x, tx, P.fly.control);
+    const nvz = lerp(v.z, tz, P.fly.control);
+    // Vertical: plain thrust rises; a boost aims the jets horizontally, so it
+    // just glides while the extra push goes forward.
+    const ny = lerp(v.y, swimHeld && !boosting ? P.fly.rise : P.fly.sink, P.fly.riseEase);
     body.setLinvel({ x: nvx, y: ny, z: nvz }, true);
     prevFlyPos = { x: t.x, y: t.y, z: t.z };
     prevCmdVelH = Math.hypot(nvx, nvz);
@@ -361,11 +380,12 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false, onG
     // Flames only while the jetpack is firing (flying + Space held); flicker.
     animTime += 0.12;
     const thrusting = gear === 'fly' && swimHeld;
-    // Jetpacks ride between two poses: parallel to the (prone) body while
-    // gliding, and vertical — perpendicular to the floor, flames straight down —
-    // during a thrust burst. `burst` eases toward whichever, so they swing over
-    // and back smoothly. The pilot's body pitch is `tilt * tiltAngle`.
-    burst += ((thrusting ? 1 : 0) - burst) * P.fly.burstEase;
+    // Jetpacks ride between two poses: parallel to the (prone) body, and vertical
+    // (flames straight down) during a normal thrust burst. A hidden Shift+Space
+    // BOOST keeps them aligned with the body — so the flames trail backward and
+    // the thrust drives you forward instead of up. `burst` eases between poses.
+    const boostVisual = thrusting && boostHeld;
+    burst += ((thrusting && !boostVisual ? 1 : 0) - burst) * P.fly.burstEase;
     jetpacks.rotation.set(lerp(tilt * P.fly.tiltAngle, 0, burst), 0, 0);
     for (const fl of flames) {
       fl.visible = thrusting;
@@ -398,6 +418,7 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false, onG
     setIntent,
     requestJump,
     setSwimming,
+    setBoosting,
     setWearing,
     get gear() {
       return gear;
