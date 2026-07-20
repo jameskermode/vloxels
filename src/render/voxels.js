@@ -30,13 +30,13 @@ export function createVoxelRenderer(scene) {
   function rebuild(level, movingCells) {
     disposeAll();
 
-    // First pass: how many instances does each block type need? Spinner blocks
-    // (coins, blades, platforms) are drawn by render/spinners.js, and flowing
-    // water by render/water.js, so we skip both here.
+    // First pass: how many instances does each block type need? Cosmetic pickups
+    // (coins via def.spinner, the scuba kit via def.wear) are drawn by
+    // render/spinners.js, and flowing water by render/water.js, so we skip them.
     const counts = new Map();
     level.forEachBlock((x, y, z, id) => {
       const def = blockById(id);
-      if (!def || def.spinner || def.flow || (movingCells && movingCells.has(`${x},${y},${z}`))) return;
+      if (!def || def.spinner || def.wear || def.flow || (movingCells && movingCells.has(`${x},${y},${z}`))) return;
       counts.set(def.key, (counts.get(def.key) || 0) + 1);
     });
 
@@ -58,7 +58,7 @@ export function createVoxelRenderer(scene) {
     // Second pass: place each block as an instance at its cell centre.
     level.forEachBlock((x, y, z, id) => {
       const def = blockById(id);
-      if (!def || def.spinner || def.flow || (movingCells && movingCells.has(`${x},${y},${z}`))) return;
+      if (!def || def.spinner || def.wear || def.flow || (movingCells && movingCells.has(`${x},${y},${z}`))) return;
       const pool = pools.get(def.key);
       if (!pool) return;
       dummy.position.set(x + 0.5, y + 0.5, z + 0.5);
