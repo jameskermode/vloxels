@@ -34,17 +34,32 @@ ok(player.mesh.rotation.x < CONFIG.player.fly.tiltAngle * 0.8,
 // Flames only while thrusting (Space held).
 player.setSwimming(false); player.syncMesh();
 ok(flames().length === 2 && flames().every((f) => !f.visible), 'no flames when not thrusting');
-player.setSwimming(true); player.syncMesh();
-ok(flames().some((f) => f.visible), 'flames appear when thrusting (Space held)');
+const jetpacks = () => flames()[0].parent; // the jetpacks group
 
-// Thrust is vertical, so flames must fire straight DOWN in world space even
-// though the pilot is leaning prone (the jetpacks ride `root`, which only yaws).
+// While GLIDING (not thrusting), the jetpacks lie parallel to the prone body.
+player.setSwimming(false);
+for (let i = 0; i < 40; i++) player.syncMesh();
+ok(flames().every((f) => !f.visible), 'no flames when gliding');
+ok(Math.abs(jetpacks().rotation.x - CONFIG.player.fly.tiltAngle) < 0.15,
+  `jetpacks lie parallel to the body while gliding (rot.x ${jetpacks().rotation.x.toFixed(2)} ~ ${CONFIG.player.fly.tiltAngle})`);
+
+// Hold Space: the jetpacks swing VERTICAL and the flames fire straight DOWN.
+player.setSwimming(true);
+for (let i = 0; i < 40; i++) player.syncMesh();
+ok(flames().some((f) => f.visible), 'flames on during a burst');
+ok(Math.abs(jetpacks().rotation.x) < 0.1, `jetpacks swing vertical during a burst (rot.x ${jetpacks().rotation.x.toFixed(2)})`);
 {
   const fq = new THREE.Quaternion();
   flames()[0].getWorldQuaternion(fq);
   const exhaust = new THREE.Vector3(0, 1, 0).applyQuaternion(fq); // cone tip = flame direction
-  ok(exhaust.y < -0.9, `flames point down for vertical thrust (dir.y ${exhaust.y.toFixed(2)})`);
+  ok(exhaust.y < -0.9, `burst flames point straight down (dir.y ${exhaust.y.toFixed(2)})`);
 }
+
+// Release: the jetpacks smoothly rotate BACK to the gliding pose (parallel body).
+player.setSwimming(false);
+for (let i = 0; i < 60; i++) player.syncMesh();
+ok(Math.abs(jetpacks().rotation.x - CONFIG.player.fly.tiltAngle) < 0.15,
+  `jetpacks return parallel to the body after the burst (rot.x ${jetpacks().rotation.x.toFixed(2)})`);
 
 // Take it off: sail hidden, capsule eases back upright, flames off.
 player.setWearing(null); player.setSwimming(false);

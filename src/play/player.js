@@ -99,9 +99,10 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false, onG
   mesh.add(wornFins);
 
   // Glider: a big wing that hovers level overhead, plus two jetpacks. Both are
-  // children of `root` (which only yaws, never pitches), so the jetpacks stay
-  // UPRIGHT and their flames fire straight DOWN — matching the vertical thrust —
-  // no matter how far the pilot leans prone. Hidden until the glider is worn.
+  // children of `root` (which only yaws, never pitches). The jetpacks lie
+  // parallel to the body while gliding, then swing to vertical (flames straight
+  // DOWN, matching the upward thrust) during a burst — see syncMesh. Hidden
+  // until the glider is worn.
   const sail = makeSailMesh();
   sail.position.set(0, 0.9, 0);
   sail.visible = false;
@@ -113,6 +114,7 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false, onG
   let gear = null; // null | 'scuba' | 'fly'
   let tilt = 0; // 0 = upright, 1 = prone; eased toward the target each frame
   let yaw = 0; // heading the wing+pilot faces (eased toward the travel direction)
+  let burst = 0; // 0 = jetpacks parallel to body (gliding), 1 = vertical (firing)
   let animTime = 0; // drives the flame flicker
   let lastGroundedPos = { x: spawn.x, y: spawn.y, z: spawn.z }; // safe drop spot over a pit
   let prevFlyPos = null; // position at the previous fly step (crash detection)
@@ -355,6 +357,12 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false, onG
     // Flames only while the jetpack is firing (flying + Space held); flicker.
     animTime += 0.12;
     const thrusting = gear === 'fly' && swimHeld;
+    // Jetpacks ride between two poses: parallel to the (prone) body while
+    // gliding, and vertical — perpendicular to the floor, flames straight down —
+    // during a thrust burst. `burst` eases toward whichever, so they swing over
+    // and back smoothly. The pilot's body pitch is `tilt * tiltAngle`.
+    burst += ((thrusting ? 1 : 0) - burst) * P.fly.burstEase;
+    jetpacks.rotation.set(lerp(tilt * P.fly.tiltAngle, 0, burst), 0, 0);
     for (const fl of flames) {
       fl.visible = thrusting;
       if (thrusting) fl.scale.set(1, 0.7 + 0.5 * Math.abs(Math.sin(animTime * 4 + fl.position.x * 7)), 1);

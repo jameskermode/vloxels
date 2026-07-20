@@ -94,6 +94,7 @@ export const CONFIG = {
       tiltAngle: -1.3, // radians the pilot leans toward prone while flying (~-75°)
       tiltEase: 0.12, // how fast that tilt eases in/out (0..1 per rendered frame)
       yawEase: 0.15, // how fast the wing+pilot turns to face the way you're going
+      burstEase: 0.2, // how fast the jetpacks swing vertical during a thrust burst
     },
   },
 };
