@@ -37,6 +37,15 @@ ok(flames().length === 2 && flames().every((f) => !f.visible), 'no flames when n
 player.setSwimming(true); player.syncMesh();
 ok(flames().some((f) => f.visible), 'flames appear when thrusting (Space held)');
 
+// Thrust is vertical, so flames must fire straight DOWN in world space even
+// though the pilot is leaning prone (the jetpacks ride `root`, which only yaws).
+{
+  const fq = new THREE.Quaternion();
+  flames()[0].getWorldQuaternion(fq);
+  const exhaust = new THREE.Vector3(0, 1, 0).applyQuaternion(fq); // cone tip = flame direction
+  ok(exhaust.y < -0.9, `flames point down for vertical thrust (dir.y ${exhaust.y.toFixed(2)})`);
+}
+
 // Take it off: sail hidden, capsule eases back upright, flames off.
 player.setWearing(null); player.setSwimming(false);
 ok(sail().visible === false, 'sail hidden after removing the glider');

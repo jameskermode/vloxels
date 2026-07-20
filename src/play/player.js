@@ -98,16 +98,17 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false, onG
   wornFins.visible = false;
   mesh.add(wornFins);
 
-  // Glider: a big wing that hovers level overhead (child of root), plus jetpacks
-  // strapped to the pilot (child of the tilting capsule) so they come into view
-  // as the pilot leans prone. Both hidden until the glider is worn.
+  // Glider: a big wing that hovers level overhead, plus two jetpacks. Both are
+  // children of `root` (which only yaws, never pitches), so the jetpacks stay
+  // UPRIGHT and their flames fire straight DOWN — matching the vertical thrust —
+  // no matter how far the pilot leans prone. Hidden until the glider is worn.
   const sail = makeSailMesh();
   sail.position.set(0, 0.9, 0);
   sail.visible = false;
   root.add(sail);
   const { group: jetpacks, flames } = makeJetpacksMesh();
   jetpacks.visible = false;
-  mesh.add(jetpacks);
+  root.add(jetpacks);
 
   let gear = null; // null | 'scuba' | 'fly'
   let tilt = 0; // 0 = upright, 1 = prone; eased toward the target each frame
