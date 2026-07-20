@@ -112,6 +112,7 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false, onG
   root.add(jetpacks);
 
   let gear = null; // null | 'scuba' | 'fly'
+  let groundedFlag = false; // last step's grounded state (read by syncMesh's tilt)
   let tilt = 0; // 0 = upright, 1 = prone; eased toward the target each frame
   let yaw = 0; // heading the wing+pilot faces (eased toward the travel direction)
   let burst = 0; // 0 = jetpacks parallel to body (gliding), 1 = vertical (firing)
@@ -235,9 +236,10 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false, onG
   function fixedUpdate(dt) {
     const t0 = body.translation();
     const ground = groundBody();
+    groundedFlag = ground !== null;
     if (ground) lastGroundedPos = { x: t0.x, y: t0.y, z: t0.z };
     if (gear === 'fly') { flyUpdate(dt, t0); return; }
-    const grounded = ground !== null;
+    const grounded = groundedFlag;
     coyote = grounded ? P.coyoteTime : Math.max(0, coyote - dt);
     if (jumpBuffer > 0) jumpBuffer = Math.max(0, jumpBuffer - dt);
 
@@ -340,8 +342,10 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false, onG
     const t = body.translation();
     root.position.set(t.x, t.y, t.z);
     // Ease the capsule between upright and prone (the body stays upright — this
-    // is purely the visual). Flying ⇒ lean prone, revealing the jetpacks.
-    tilt += ((gear === 'fly' ? 1 : 0) - tilt) * P.fly.tiltEase;
+    // is purely the visual). Prone only while flying AND airborne; landing on a
+    // floor or on top of an object stands the pilot back upright.
+    const prone = gear === 'fly' && !groundedFlag;
+    tilt += ((prone ? 1 : 0) - tilt) * P.fly.tiltEase;
     mesh.rotation.set(tilt * P.fly.tiltAngle, 0, 0);
     // Turn the whole assembly to face the way we're travelling (while flying and
     // actually moving). The pilot's nose (capsule top, tilted forward) points

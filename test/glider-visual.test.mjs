@@ -3,9 +3,14 @@
 // only while flying, and the jetpack flames show only while thrusting (Space).
 import RAPIER from '@dimforge/rapier3d-compat';
 import * as THREE from 'three';
+import { Level } from '../src/level.js';
+import { BLOCKS as B } from '../src/blocks.js';
 import { createPhysicsWorld } from '../src/physics/world.js';
+import { createVoxelBody } from '../src/physics/voxelBody.js';
 import { createPlayer } from '../src/play/player.js';
 import { CONFIG } from '../src/config.js';
+
+const mute = (f) => { const l = console.log; console.log = () => {}; try { return f(); } finally { console.log = l; } };
 
 let pass = 0, fail = 0;
 const ok = (c, m) => (c ? pass++ : (fail++, console.error('FAIL:', m)));
@@ -81,6 +86,22 @@ ok(flames().every((f) => !f.visible), 'flames off after removing the glider');
   const want = Math.atan2(-1, 0); // travelling +x
   const err = Math.abs(Math.atan2(Math.sin(yaw - want), Math.cos(yaw - want)));
   ok(err < 0.2, `assembly yaws to face +x travel (yaw ${yaw.toFixed(2)} ~ ${want.toFixed(2)})`);
+}
+
+// Landing while flying stands the pilot back UPRIGHT: on a floor, grounded, the
+// glider is worn but the capsule is NOT prone.
+{
+  const s = new THREE.Scene();
+  const ph = createPhysicsWorld();
+  const L = new Level(8, 6, 8);
+  for (let x = 0; x < 8; x++) for (let z = 0; z < 8; z++) L.set(x, 0, z, B.solid.id); // floor top y1
+  const terrain = createVoxelBody(ph.world);
+  mute(() => terrain.rebuild(L));
+  const p3 = createPlayer(ph.world, s, { x: 4, y: 1.75, z: 4 }, () => false, () => {});
+  p3.setWearing('fly');
+  for (let i = 0; i < 30; i++) { p3.setIntent(0, 0); p3.setSwimming(false); p3.fixedUpdate(1 / 60); ph.world.step(ph.eventQueue); }
+  for (let i = 0; i < 60; i++) p3.syncMesh();
+  ok(Math.abs(p3.mesh.rotation.x) < 0.1, `landed pilot stands upright even with the glider on (rot.x ${p3.mesh.rotation.x.toFixed(2)})`);
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);
