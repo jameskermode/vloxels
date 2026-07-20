@@ -271,6 +271,7 @@ async function main() {
     const dy = level.isSolid(cx, fy, cz) ? fy + 1 : Math.max(0, Math.floor(pos.y));
     play.terrain.addSensor('glider', cx, dy, cz);
     spinners.addItem([cx, dy, cz], BLOCKS.glider);
+    gliderIndicator.hide(); // you're not flying any more (crash / death drop)
     sfx.coin(); // a little "clunk" (reuse the pickup blip)
   }
 
