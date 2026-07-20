@@ -111,6 +111,7 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false, onG
 
   let gear = null; // null | 'scuba' | 'fly'
   let tilt = 0; // 0 = upright, 1 = prone; eased toward the target each frame
+  let yaw = 0; // heading the wing+pilot faces (eased toward the travel direction)
   let animTime = 0; // drives the flame flicker
   let lastGroundedPos = { x: spawn.x, y: spawn.y, z: spawn.z }; // safe drop spot over a pit
   let prevFlyPos = null; // position at the previous fly step (crash detection)
@@ -339,6 +340,17 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false, onG
     // is purely the visual). Flying ⇒ lean prone, revealing the jetpacks.
     tilt += ((gear === 'fly' ? 1 : 0) - tilt) * P.fly.tiltEase;
     mesh.rotation.set(tilt * P.fly.tiltAngle, 0, 0);
+    // Turn the whole assembly to face the way we're travelling (while flying and
+    // actually moving). The pilot's nose (capsule top, tilted forward) points
+    // along -z at yaw 0, so this heading aims it down the velocity vector.
+    const v = body.linvel();
+    const speed = Math.hypot(v.x, v.z);
+    if (gear === 'fly' && speed > 0.5) {
+      const target = Math.atan2(-v.x, -v.z);
+      const d = Math.atan2(Math.sin(target - yaw), Math.cos(target - yaw)); // shortest turn
+      yaw += d * P.fly.yawEase;
+    }
+    root.rotation.y = yaw;
     // Flames only while the jetpack is firing (flying + Space held); flicker.
     animTime += 0.12;
     const thrusting = gear === 'fly' && swimHeld;

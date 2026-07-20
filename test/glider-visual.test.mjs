@@ -44,5 +44,20 @@ for (let i = 0; i < 80; i++) player.syncMesh();
 ok(Math.abs(player.mesh.rotation.x) < 0.05, `capsule returns upright (rot.x ${player.mesh.rotation.x.toFixed(2)})`);
 ok(flames().every((f) => !f.visible), 'flames off after removing the glider');
 
+// Faces the direction of travel while flying: fly +x and the assembly yaws to
+// the heading for +x travel.
+{
+  const scene2 = new THREE.Scene();
+  const phys2 = createPhysicsWorld();
+  const p2 = createPlayer(phys2.world, scene2, { x: 0, y: 6, z: 0 }, () => false, () => {});
+  p2.setWearing('fly');
+  for (let i = 0; i < 30; i++) { p2.setIntent(1, 0); p2.setSwimming(false); p2.fixedUpdate(1 / 60); phys2.world.step(phys2.eventQueue); }
+  for (let i = 0; i < 60; i++) p2.syncMesh();
+  const yaw = p2.mesh.parent.rotation.y; // root is the mesh's parent
+  const want = Math.atan2(-1, 0); // travelling +x
+  const err = Math.abs(Math.atan2(Math.sin(yaw - want), Math.cos(yaw - want)));
+  ok(err < 0.2, `assembly yaws to face +x travel (yaw ${yaw.toFixed(2)} ~ ${want.toFixed(2)})`);
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail) process.exit(1);
