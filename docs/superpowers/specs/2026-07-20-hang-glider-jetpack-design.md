@@ -33,8 +33,9 @@ Add one entry (id continues after `scuba` = 16):
 |-----|----|------|-------|
 | `glider` | 17 | Glider | `wear: 'fly'` (non-solid — no `solid` flag) |
 
-- Colour: bright **orange `0xff7043`** (reads as a kite/sail, distinct from the
-  teal scuba and blue water).
+- Colour: **green `0x4caf50`** (the sail colour; the block/palette swatch reads as
+  the kite, distinct from the teal scuba and blue water). The jetpack cylinders
+  are **grey `0x9098a0`**.
 - Already excluded from the plain-voxel renderer (the `def.wear` skip added for
   scuba covers any `wear` block); drawn cosmetically by `spinners.js`.
 - Palette gains one entry: Glider.
@@ -149,8 +150,8 @@ grounded.
 - **Worn (`player.js`):** build a glider "rig" once and add it as a child of the
   player mesh, hidden until `gear === 'fly'`: a **triangular delta sail** above
   the head (a flat wide triangle, tilted back) + **two short cylinders** (the
-  jetpacks) low on the back. Bright sail, metal-grey cylinders. Toggled by
-  `setWearing`.
+  jetpacks) low on the back. **Green sail (`0x4caf50`), grey cylinders
+  (`0x9098a0`).** Toggled by `setWearing`.
 - **World pickup + dropped icon (`spinners.js`):** extend the cosmetic renderer
   so a `wear === 'fly'` block draws a small **glider icon** (a compact sail +
   two tiny cylinders), bobbing (no spin) like the scuba flippers. Factor a
