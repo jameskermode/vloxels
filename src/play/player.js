@@ -15,7 +15,7 @@ import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { CONFIG } from '../config.js';
 import { BLOCKS } from '../blocks.js';
-import { makeFlippersMesh } from '../render/spinners.js';
+import { makeFlippersMesh, makeGliderMesh } from '../render/spinners.js';
 
 const P = CONFIG.player;
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -46,13 +46,18 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false) {
   );
   scene.add(mesh);
 
-  // Flippers drawn just below the capsule when the scuba kit is worn.
+  // Gear worn on the player. Mutually exclusive: one slot, latest pickup wins.
   const wornFins = makeFlippersMesh(BLOCKS.scuba.color);
-  wornFins.position.set(0, -REACH + 0.05, 0); // at the feet
-  wornFins.rotation.x = 0.5; // tip them down/forward a touch
+  wornFins.position.set(0, -REACH + 0.05, 0); // scuba fins at the feet
+  wornFins.rotation.x = 0.5;
   wornFins.visible = false;
   mesh.add(wornFins);
-  let wearing = false;
+
+  const gliderRig = makeGliderMesh(1); // green sail overhead + grey jetpacks on the back
+  gliderRig.visible = false;
+  mesh.add(gliderRig);
+
+  let gear = null; // null | 'scuba' | 'fly'
 
   // --- Controller state -----------------------------------------------------
   const intent = { x: 0, z: 0 }; // desired horizontal move direction (unit-ish)
@@ -106,10 +111,12 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false) {
     swimHeld = held;
   }
 
-  // Put on / take off gear. Scuba stays on until a fresh player is built.
+  // Put on gear (mutually exclusive). Scuba lasts until the level ends; the
+  // glider until you crash or die (see respawn / flight, added later).
   function setWearing(kind) {
-    wearing = !!kind;
-    wornFins.visible = wearing;
+    gear = kind;
+    wornFins.visible = kind === 'scuba';
+    gliderRig.visible = kind === 'fly';
   }
 
   // Is the given world point inside a water cell?
@@ -153,7 +160,7 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false) {
     // platform with no input this makes us track the platform (carried); on
     // static ground carry is zero so we just stop. Water halves our speed.
     const carry = carryVelocity(ground);
-    const speedMult = inWater ? (wearing ? P.scubaSpeedMult : P.waterSpeedMult) : 1;
+    const speedMult = inWater ? (gear === 'scuba' ? P.scubaSpeedMult : P.waterSpeedMult) : 1;
     const targetX = carry.x + intent.x * P.speed * speedMult;
     const targetZ = carry.z + intent.z * P.speed * speedMult;
 
@@ -181,10 +188,10 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false) {
         // Holding swims UP only until your HEAD reaches the surface, so you
         // tread neck-deep and can't stand on top of the water.
         const toSurface = col ? col.surfaceY - (t.y + REACH) : 0; // >0 = head under
-        const swimMax = wearing ? P.scubaSwimSpeed : P.swimSpeed;
+        const swimMax = gear === 'scuba' ? P.scubaSwimSpeed : P.swimSpeed;
         ny = Math.max(0, Math.min(swimMax, toSurface * P.swimApproach));
       } else {
-        ny = lerp(v.y, wearing ? P.scubaSink : P.waterSink, 0.15); // scuba hovers; else gentle sink
+        ny = lerp(v.y, gear === 'scuba' ? P.scubaSink : P.waterSink, 0.15); // scuba hovers; else gentle sink
       }
     } else if (jumpBuffer > 0 && coyote > 0) {
       // Ordinary jump on land — and on a solid floor under shallow water, so you
@@ -245,6 +252,10 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false) {
       if (o.geometry) o.geometry.dispose();
       if (o.material) o.material.dispose();
     });
+    gliderRig.traverse((o) => {
+      if (o.geometry) o.geometry.dispose();
+      if (o.material) o.material.dispose();
+    });
     world.removeRigidBody(body);
   }
 
@@ -256,8 +267,11 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false) {
     requestJump,
     setSwimming,
     setWearing,
+    get gear() {
+      return gear;
+    },
     get wearing() {
-      return wearing;
+      return gear === 'scuba';
     },
     fixedUpdate,
     respawn,
