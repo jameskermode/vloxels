@@ -20,7 +20,7 @@ import { makeFlippersMesh, makeGliderMesh } from '../render/spinners.js';
 const P = CONFIG.player;
 const lerp = (a, b, t) => a + (b - a) * t;
 
-export function createPlayer(world, scene, spawn, isWaterCell = () => false) {
+export function createPlayer(world, scene, spawn, isWaterCell = () => false, onGliderDrop = () => {}) {
   const spawnPos = { x: spawn.x, y: spawn.y, z: spawn.z };
   const REACH = P.halfHeight + P.radius; // capsule centre -> feet
 
@@ -58,6 +58,9 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false) {
   mesh.add(gliderRig);
 
   let gear = null; // null | 'scuba' | 'fly'
+  let lastGroundedPos = { x: spawn.x, y: spawn.y, z: spawn.z }; // safe drop spot over a pit
+  let prevFlyPos = null; // position at the previous fly step (crash detection)
+  let prevCmdVelH = 0; // horizontal speed we drove last fly step (crash detection)
 
   // --- Controller state -----------------------------------------------------
   const intent = { x: 0, z: 0 }; // desired horizontal move direction (unit-ish)
@@ -138,9 +141,42 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false) {
     return { surfaceY: top + 1, bottomY: bot };
   }
 
+  // Drop the glider (crash or death): clear flight and tell main where it fell.
+  function crash(pos) {
+    gear = null;
+    gliderRig.visible = false;
+    prevFlyPos = null;
+    onGliderDrop({ x: pos.x, y: pos.y, z: pos.z });
+  }
+
+  // Flight: hold Space (swimHeld) for zippy thrust up, release to glide down
+  // gently; steer with intent. If we commanded a real sideways move but got
+  // blocked by a block, we hit a wall side-on ⇒ crash. Called instead of the
+  // normal branch while gear === 'fly'.
+  function flyUpdate(dt, t) {
+    if (prevFlyPos) {
+      const movedH = Math.hypot(t.x - prevFlyPos.x, t.z - prevFlyPos.z);
+      if (prevCmdVelH >= P.fly.crashSpeed && movedH < (prevCmdVelH * dt) / 3) {
+        crash(t);
+        return;
+      }
+    }
+    const v = body.linvel();
+    const nvx = lerp(v.x, intent.x * P.fly.speed, P.fly.control);
+    const nvz = lerp(v.z, intent.z * P.fly.speed, P.fly.control);
+    const ny = lerp(v.y, swimHeld ? P.fly.rise : P.fly.sink, P.fly.riseEase);
+    body.setLinvel({ x: nvx, y: ny, z: nvz }, true);
+    prevFlyPos = { x: t.x, y: t.y, z: t.z };
+    prevCmdVelH = Math.hypot(nvx, nvz);
+    if (body.translation().y < P.fallKillY) respawn(); // fell out ⇒ respawn (drops glider)
+  }
+
   // Called once per FIXED physics step (before world.step).
   function fixedUpdate(dt) {
+    const t0 = body.translation();
     const ground = groundBody();
+    if (ground) lastGroundedPos = { x: t0.x, y: t0.y, z: t0.z };
+    if (gear === 'fly') { flyUpdate(dt, t0); return; }
     const grounded = ground !== null;
     coyote = grounded ? P.coyoteTime : Math.max(0, coyote - dt);
     if (jumpBuffer > 0) jumpBuffer = Math.max(0, jumpBuffer - dt);
@@ -227,6 +263,12 @@ export function createPlayer(world, scene, spawn, isWaterCell = () => false) {
   }
 
   function respawn() {
+    if (gear === 'fly') {
+      gear = null;
+      gliderRig.visible = false;
+      prevFlyPos = null;
+      onGliderDrop({ ...lastGroundedPos }); // drop at the last real floor, never lost
+    }
     body.setTranslation(spawnPos, true);
     body.setLinvel({ x: 0, y: 0, z: 0 }, true);
     jumpBuffer = 0;
