@@ -29,7 +29,15 @@ function ensureStyle() {
       display: none; flex-direction: column; gap: 6px; padding: 6px;
       background: rgba(0,0,0,0.6); border-radius: 10px;
     }
-    .vx-cat:hover > .vx-stack, .vx-cat.vx-open > .vx-stack { display: flex; }
+    /* An open/hovered category lifts above its neighbours so its (wider) stack
+       isn't overlapped by a sibling button that would steal the taps. */
+    .vx-cat.vx-open, .vx-cat:hover { z-index: 1; }
+    .vx-cat.vx-open > .vx-stack { display: flex; }
+    /* Hover-to-open only on real hover devices; touch relies on the tapped
+       .vx-open class (so iOS's sticky :hover can't leave a stack stuck open). */
+    @media (hover: hover) {
+      .vx-cat:hover > .vx-stack { display: flex; }
+    }
   `;
   document.head.appendChild(s);
 }
@@ -141,6 +149,7 @@ export function createPalette() {
       const g = cats.find((c) => c.blocks.some((b) => b.id === id));
       selectedId = id;
       if (g) remembered.set(g.key, id);
+      closeAll();
       refresh();
     },
   };
