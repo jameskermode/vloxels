@@ -18,6 +18,7 @@ const LABELS = {
   motorLinearFast: 'Fast Slider',
   shaft: 'Shaft',
   scuba: 'Scuba Kit',
+  glider: 'Glider',
   start: 'Start',
   goal: 'Goal',
 };

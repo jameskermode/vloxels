@@ -81,5 +81,16 @@ export const CONFIG = {
     scubaSpeedMult: 1.3, // horizontal speed (× land) underwater with scuba (vs 0.5 normally)
     scubaSwimSpeed: 8.5, // faster swim-up with scuba (vs 6.5)
     scubaSink: 0, // neutral buoyancy: hover instead of sinking when idle deep
+    // Glider (hang-glider + jetpack): hold Space for zippy jetpack thrust
+    // (rise), release to glide down gently; steer freely with the move keys.
+    // Fly INTO a wall side-on and you drop it. Values in units/sec.
+    fly: {
+      rise: 6, // upward speed while Space (jetpack) is held — zippy
+      sink: -1.5, // gentle glide-down speed when not thrusting — floaty
+      speed: 7, // horizontal navigation speed
+      control: 0.5, // horizontal steering responsiveness (0..1)
+      riseEase: 0.4, // how fast vertical velocity eases toward its target
+      crashSpeed: 2.0, // commanded ≥ this horizontal speed but blocked ⇒ wall crash
+    },
   },
 };

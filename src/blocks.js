@@ -27,6 +27,7 @@ export const BLOCKS = {
   motorLinearFast: { id: 14, color: 0x5f5fd0, solid: true, motor: 'fast', linear: true },
   shaft: { id: 15, color: 0x9aa0a6, shaft: true, opacity: 0.4 }, // see-through: it's a guide rail the car rides THROUGH, not a wall
   scuba: { id: 16, color: 0x11333a, wear: 'scuba' }, // wearable: faster underwater; picked up like a coin
+  glider: { id: 17, color: 0x4caf50, wear: 'fly' }, // wearable: fly (hang-glider + jetpack); picked up like scuba
   start: { id: 7, color: 0xffffff, solid: false, unique: true },
   goal: { id: 8, color: 0x40e0a0, solid: false, wins: true },
 };
