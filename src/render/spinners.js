@@ -1,5 +1,5 @@
-// render/spinners.js — the visible cosmetic pickups: spinning+bobbing coins and
-// bobbing (non-spinning) scuba flippers.
+// render/spinners.js — the visible cosmetic pickups: spinning+bobbing coins,
+// bobbing (non-spinning) scuba flippers, and glider pickups.
 //
 // These have no physics body (they're sensors) so they animate cosmetically in
 // both EDIT and PLAY. Motor assemblies (blades/platforms) are drawn and synced
@@ -38,6 +38,33 @@ export function makeFlippersMesh(color) {
   return group;
 }
 
+// A hang-glider + twin jetpack: a flat green triangular sail overhead and two
+// grey cylinders (the jetpacks) on the back. Reused for the world pickup icon
+// and, larger, for the rig drawn on a flying player.
+export function makeGliderMesh(scale = 1) {
+  const group = new THREE.Group();
+  const tri = new THREE.Shape();
+  tri.moveTo(0, 0.55);
+  tri.lineTo(-0.6, -0.45);
+  tri.lineTo(0.6, -0.45);
+  tri.closePath();
+  const sail = new THREE.Mesh(
+    new THREE.ShapeGeometry(tri),
+    new THREE.MeshLambertMaterial({ color: 0x4caf50, side: THREE.DoubleSide }),
+  );
+  sail.rotation.x = -Math.PI / 2 + 0.35; // lay it near-flat overhead, nose up
+  sail.position.set(0, 0.95, 0);
+  group.add(sail);
+  const jetGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.45, 10);
+  for (const side of [-1, 1]) {
+    const jet = new THREE.Mesh(jetGeo, new THREE.MeshLambertMaterial({ color: 0x9098a0 }));
+    jet.position.set(side * 0.22, -0.05, -0.32);
+    group.add(jet);
+  }
+  group.scale.setScalar(scale);
+  return group;
+}
+
 export function createSpinners(scene) {
   const group = new THREE.Group();
   scene.add(group);
@@ -55,26 +82,31 @@ export function createSpinners(scene) {
     items.clear();
   }
 
-  // (Re)build cosmetic pickups from the level: spinning coins + bobbing flippers.
+  // Build the cosmetic for one pickup block, or null if it isn't a pickup.
+  function buildPickup(def) {
+    if (def.spinner === 'coin') return { mesh: makeCoinMesh(def.color), yOff: 0.5, style: 'coin' };
+    if (def.wear === 'scuba') return { mesh: makeFlippersMesh(def.color), yOff: 0.2, style: 'flippers' };
+    if (def.wear === 'fly') return { mesh: makeGliderMesh(0.6), yOff: 0.3, style: 'glider' };
+    return null;
+  }
+
+  // Add one pickup cosmetic at a cell (no-op if the block isn't a pickup).
+  function addItem(cell, def) {
+    const p = buildPickup(def);
+    if (!p) return;
+    const [x, y, z] = cell;
+    const baseY = y + p.yOff;
+    p.mesh.position.set(x + 0.5, baseY, z + 0.5);
+    group.add(p.mesh);
+    items.set(key(x, y, z), { style: p.style, mesh: p.mesh, baseY, cell: [x, y, z] });
+  }
+
+  // (Re)build all cosmetic pickups from the level.
   function rebuild(level) {
     clear();
     level.forEachBlock((x, y, z, id) => {
       const def = blockById(id);
-      let mesh, baseY, style;
-      if (def && def.spinner === 'coin') {
-        mesh = makeCoinMesh(def.color);
-        baseY = y + 0.5;
-        style = 'coin';
-      } else if (def && def.wear === 'scuba') {
-        mesh = makeFlippersMesh(def.color);
-        baseY = y + 0.2; // rests on the block below, not floating mid-cell
-        style = 'flippers';
-      } else {
-        return;
-      }
-      mesh.position.set(x + 0.5, baseY, z + 0.5);
-      group.add(mesh);
-      items.set(key(x, y, z), { style, mesh, baseY, cell: [x, y, z] });
+      if (def) addItem([x, y, z], def);
     });
   }
 
@@ -99,5 +131,5 @@ export function createSpinners(scene) {
     }
   }
 
-  return { rebuild, removeItem, update, clear };
+  return { rebuild, addItem, removeItem, update, clear };
 }
